@@ -91,9 +91,9 @@ export const ManageHomepageSections: React.FC = () => {
     {
       key: 'ticker',
       label: 'মুভিং নোটিফিকেশন বার (সর্বশেষ নোটিশ)',
-      sublabel: 'ন্যাভবারের নিচে চলমান জরুরি নোটিশ স্ক্রলার',
+      sublabel: 'ন্যাভবারের নিচে চলমান জরুরি নোটিশ স্ক্রলার (স্পিড ও ভিজিবিলিটি কন্ট্রোল)',
       icon: Bell,
-      editTab: 'notices',
+      editTab: 'header_settings',
     },
     {
       key: 'hero',
@@ -304,6 +304,30 @@ export const ManageHomepageSections: React.FC = () => {
             <span>সবগুলো দৃশ্যমান করুন</span>
           </button>
         </div>
+      </div>
+
+      {/* Quick link banner to Header & Ticker settings */}
+      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-emerald-700 text-white rounded-xl shrink-0">
+            <Sliders className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-xs sm:text-sm font-bold text-emerald-950">
+              ন্যাভবার সাইজ, টপ বার এবং মুভিং নোটিশ বারের স্পিড কন্ট্রোল করতে চান?
+            </h4>
+            <p className="text-[11px] sm:text-xs text-emerald-800">
+              টপ বার Show/Hide, ন্যাভবারের উচ্চতা (Height) কম-বেশি এবং নোটিশ বারের স্ক্রলিং স্পিড এক ক্লিকেই পরিবর্তন করুন
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setAdminTab('header_settings')}
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition cursor-pointer shrink-0 shadow-xs"
+        >
+          <span>হেডার ও নোটিফিকেশন বার সেটিংস</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Guide Callout */}

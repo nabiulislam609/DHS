@@ -52,8 +52,6 @@ export const HeroSlider: React.FC = () => {
 
   return (
     <section id="hero" className="relative w-full h-[520px] sm:h-[600px] lg:h-[680px] xl:h-[720px] overflow-hidden bg-gray-900 scroll-mt-20">
-      {/* Anchor for #home navigation */}
-      <span id="home" className="absolute top-0 left-0 w-0 h-0 block pointer-events-none" />
       {/* Background Image with Dark Greenish Overlay */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-1000 transform scale-105"

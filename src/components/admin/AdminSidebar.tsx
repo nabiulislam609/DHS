@@ -6,6 +6,7 @@ import {
   Settings,
   LayoutTemplate,
   Sliders,
+  SlidersHorizontal,
   Navigation,
   FileCode,
   Users,
@@ -57,6 +58,7 @@ export const AdminSidebar: React.FC = () => {
       items: [
         { id: 'dashboard' as AdminTab, label: 'ড্যাশবোর্ড', icon: LayoutDashboard },
         { id: 'settings' as AdminTab, label: 'সাইট সেটিংস', icon: Settings },
+        { id: 'header_settings' as AdminTab, label: 'হেডার ও নোটিফিকেশন বার', icon: SlidersHorizontal },
         { id: 'sections' as AdminTab, label: 'হোমপেজ সেকশন (Show/Hide)', icon: LayoutTemplate },
       ],
     },

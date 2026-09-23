@@ -35,7 +35,7 @@ export const initialSiteSettings: SiteSettings = {
   email: 'info@dadrahs.edu.bd',
   address: 'দাদরা, জয়পুরহাট সদর, রাজশাহী, বাংলাদেশ',
   officeHours: 'শনি-বৃহস্পতিবার: সকাল ৮টা - বিকাল ৫টা',
-  googleMapEmbedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3648.5!2d89.08!3d25.08!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjXCsDA0JzQ4LjAiTiA4OcKwMDQnNDguMCJF!5e0!3m2!1sen!2sbd!4v1700000000000',
+  googleMapEmbedUrl: 'https://maps.google.com/maps?q=%E0%A6%A6%E0%A6%BE%E0%A6%A6%E0%A6%B0%E0%A6%BE%20%E0%A6%89%E0%A6%9A%E0%A7%8D%E0%A6%9A%20%E0%A6%AC%E0%A6%BF%E0%A6%A6%E0%A7%8D%E0%A6%AF%E0%A6%BE%E0%A6%B2%E0%A6%AF%E0%A6%BC%2C%20%E0%A6%9C%E0%A6%AF%E0%A6%BC%E0%A6%AA%E0%A7%81%E0%A6%B0%E0%A6%B9%E0%A6%BE%E0%A6%9F&t=&z=15&ie=UTF8&iwloc=&output=embed',
   facebook: 'https://facebook.com/dadrahighschool',
   youtube: 'https://youtube.com/@dadrahighschool',
   instagram: 'https://instagram.com/dadrahighschool',
@@ -58,6 +58,12 @@ export const initialSiteSettings: SiteSettings = {
   gpa5Count: '৪২',
   totalClassrooms: '৬০+',
   totalAwards: '১৭',
+  showTopBar: true,
+  navbarHeight: 'compact',
+  navbarPaddingY: 10,
+  showNoticeTicker: true,
+  noticeTickerSpeed: 60,
+  noticeTickerLabel: 'সর্বশেষ নোটিশ:',
 };
 
 export const initialHeroSlides: HeroSlide[] = [

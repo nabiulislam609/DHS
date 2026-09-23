@@ -16,6 +16,7 @@ import { ManageExamResults } from './ManageExamResults';
 import { ManageHeroSlides } from './ManageHeroSlides';
 import { ManageNavigation } from './ManageNavigation';
 import { ManageHomepageSections } from './ManageHomepageSections';
+import { ManageHeaderAndTicker } from './ManageHeaderAndTicker';
 import { ManagePerformanceTrends } from './ManagePerformanceTrends';
 import { GenericSectionManager } from './GenericSectionManager';
 import { Eye, Bell, ShieldCheck } from 'lucide-react';
@@ -45,6 +46,8 @@ export const AdminPanel: React.FC = () => {
         return <ManageGallery />;
       case 'settings':
         return <ManageSiteSettings />;
+      case 'header_settings':
+        return <ManageHeaderAndTicker />;
       case 'hero':
         return <ManageHeroSlides />;
       case 'navigation':

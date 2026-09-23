@@ -53,20 +53,13 @@ export const Header: React.FC = () => {
     if (currentFrontendPage !== 'home') {
       setCurrentFrontendPage('home');
       setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        const tickerEl = document.getElementById('notice-ticker');
-        if (tickerEl) {
-          tickerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 60);
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      }, 50);
       return;
     }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    const tickerEl = document.getElementById('notice-ticker');
-    if (tickerEl) {
-      tickerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    // Scroll directly to the very top so Header and NoticeTicker are fully visible
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
   };
 
   const scrollToSection = (id: string) => {
@@ -126,62 +119,104 @@ export const Header: React.FC = () => {
     setCurrentFrontendPage('staff');
   };
 
+  const navPaddingY =
+    siteSettings.navbarPaddingY !== undefined
+      ? siteSettings.navbarPaddingY
+      : siteSettings.navbarHeight === 'compact'
+      ? 6
+      : siteSettings.navbarHeight === 'spacious'
+      ? 18
+      : 10;
+
+  const logoSizeClass =
+    navPaddingY <= 7
+      ? 'w-9 h-9 sm:w-10 sm:h-10'
+      : navPaddingY >= 16
+      ? 'w-12 h-12 sm:w-14 sm:h-14'
+      : 'w-10 h-10 sm:w-11 sm:h-11';
+
   return (
-    <header className="w-full bg-white shadow-xs border-b border-gray-100 sticky top-0 z-40">
+    <header className="w-full bg-white shadow-xs border-b border-gray-100 sticky top-0 z-40 transition-all duration-200">
       {/* Top Bar with Deep Green Background */}
-      <div className="bg-[#0f5338] text-white text-xs py-1 sm:py-1.5 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          {/* Left Contact Info */}
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <div className="flex items-center gap-1.5 hover:text-emerald-200 transition">
-              <Phone className="w-3.5 h-3.5 text-emerald-300" />
-              <span>{siteSettings.phone1}</span>
-            </div>
-            <div className="hidden sm:flex items-center gap-1.5 hover:text-emerald-200 transition">
-              <Mail className="w-3.5 h-3.5 text-emerald-300" />
-              <span>{siteSettings.email}</span>
-            </div>
-            <div className="hidden md:flex items-center gap-1.5 text-emerald-100">
-              <Clock className="w-3.5 h-3.5 text-emerald-300" />
-              <span>{siteSettings.officeHours}</span>
-            </div>
-          </div>
-
-          {/* Right Social & Admin Panel Switcher */}
-          <div className="flex items-center gap-4">
-            <div className="hidden lg:flex items-center gap-3 text-emerald-200">
-              <a href="#social" className="hover:text-white transition">Facebook</a>
-              <span>•</span>
-              <a href="#social" className="hover:text-white transition">YouTube</a>
-              <span>•</span>
-              <a href="#social" className="hover:text-white transition">Instagram</a>
+      {siteSettings.showTopBar !== false && (
+        <div className="bg-[#0f5338] text-white text-xs py-1 sm:py-1.5 px-4 sm:px-8 transition-all">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            {/* Left Contact Info */}
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-1.5 hover:text-emerald-200 transition">
+                <Phone className="w-3.5 h-3.5 text-emerald-300" />
+                <span>{siteSettings.topBarPhone || siteSettings.phone1}</span>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 hover:text-emerald-200 transition">
+                <Mail className="w-3.5 h-3.5 text-emerald-300" />
+                <span>{siteSettings.topBarEmail || siteSettings.email}</span>
+              </div>
+              <div className="hidden md:flex items-center gap-1.5 text-emerald-100">
+                <Clock className="w-3.5 h-3.5 text-emerald-300" />
+                <span>{siteSettings.topBarOfficeHours || siteSettings.officeHours}</span>
+              </div>
             </div>
 
-            {/* Admin Login / Panel Button matching the screenshot */}
-            <button
-              onClick={() => setViewMode('backend')}
-              className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded text-xs font-medium text-emerald-50 transition border border-white/20 hover:border-white/40 cursor-pointer"
-              title="অ্যাডমিন প্যানেল এ প্রবেশ করুন"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Admin</span>
-            </button>
+            {/* Right Social & Admin Panel Switcher */}
+            <div className="flex items-center gap-4">
+              <div className="hidden lg:flex items-center gap-3 text-emerald-200">
+                <a
+                  href={siteSettings.topBarFacebookUrl || siteSettings.facebook || '#'}
+                  target={siteSettings.facebook ? '_blank' : undefined}
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition"
+                >
+                  {siteSettings.topBarFacebookText || 'Facebook'}
+                </a>
+                <span>•</span>
+                <a
+                  href={siteSettings.topBarYoutubeUrl || siteSettings.youtube || '#'}
+                  target={siteSettings.youtube ? '_blank' : undefined}
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition"
+                >
+                  {siteSettings.topBarYoutubeText || 'YouTube'}
+                </a>
+                <span>•</span>
+                <a
+                  href={siteSettings.topBarInstagramUrl || siteSettings.instagram || '#'}
+                  target={siteSettings.instagram ? '_blank' : undefined}
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition"
+                >
+                  {siteSettings.topBarInstagramText || 'Instagram'}
+                </a>
+              </div>
+
+              {/* Admin Login / Panel Button matching the screenshot */}
+              <button
+                onClick={() => setViewMode('backend')}
+                className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded text-xs font-medium text-emerald-50 transition border border-white/20 hover:border-white/40 cursor-pointer"
+                title="অ্যাডমিন প্যানেল এ প্রবেশ করুন"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>{siteSettings.topBarAdminText || 'Admin'}</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Navbar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-2 sm:py-2.5 flex items-center justify-between">
+      <div
+        className="max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between transition-all duration-200"
+        style={{ paddingTop: `${navPaddingY}px`, paddingBottom: `${navPaddingY}px` }}
+      >
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer" onClick={handleHomeClick}>
           {siteSettings.logoUrl ? (
             <img
               src={siteSettings.logoUrl}
               alt="Logo"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-emerald-800 shadow-xs bg-white"
+              className={`${logoSizeClass} rounded-full object-cover border-2 border-emerald-800 shadow-xs bg-white transition-all`}
             />
           ) : (
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-amber-400 border-2 border-emerald-800 flex items-center justify-center shadow-xs text-emerald-950 font-bold">
+            <div className={`${logoSizeClass} rounded-full bg-amber-400 border-2 border-emerald-800 flex items-center justify-center shadow-xs text-emerald-950 font-bold transition-all`}>
               <GraduationCap className="w-6 h-6 text-emerald-900" />
             </div>
           )}
@@ -325,6 +360,17 @@ export const Header: React.FC = () => {
           >
             ভর্তি আবেদন
           </button>
+
+          {siteSettings.showTopBar === false && (
+            <button
+              onClick={() => setViewMode('backend')}
+              className="flex items-center gap-1.5 bg-gray-100 hover:bg-emerald-50 text-gray-700 hover:text-emerald-800 border border-gray-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer"
+              title="অ্যাডমিন প্যানেল এ প্রবেশ করুন"
+            >
+              <LogIn className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Admin</span>
+            </button>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}

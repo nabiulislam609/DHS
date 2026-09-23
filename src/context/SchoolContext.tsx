@@ -46,6 +46,7 @@ export type ViewMode = 'frontend' | 'backend';
 export type AdminTab =
   | 'dashboard'
   | 'settings'
+  | 'header_settings'
   | 'sections'
   | 'hero'
   | 'navigation'

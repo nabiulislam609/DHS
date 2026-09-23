@@ -19,12 +19,12 @@ import { Footer } from './Footer';
 import { AdmissionModal } from './AdmissionModal';
 
 export const FrontendView: React.FC = () => {
-  const { sectionVisibility } = useSchool();
+  const { sectionVisibility, siteSettings } = useSchool();
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] text-gray-800 flex flex-col antialiased selection:bg-emerald-200 selection:text-emerald-900">
+    <div id="home" className="min-h-screen bg-[#fafaf9] text-gray-800 flex flex-col antialiased selection:bg-emerald-200 selection:text-emerald-900 scroll-mt-0">
       <Header />
-      {sectionVisibility.ticker && <NoticeTicker />}
+      {sectionVisibility.ticker && siteSettings.showNoticeTicker !== false && <NoticeTicker />}
       {sectionVisibility.hero && <HeroSlider />}
       {sectionVisibility.quick_actions && <QuickActions />}
       {sectionVisibility.notices && <NoticeBoard />}

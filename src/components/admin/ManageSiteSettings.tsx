@@ -12,10 +12,12 @@ import {
   Phone,
   FileText,
   Building,
+  Sliders,
+  ExternalLink,
 } from 'lucide-react';
 
 export const ManageSiteSettings: React.FC = () => {
-  const { siteSettings, updateSiteSettings } = useSchool();
+  const { siteSettings, updateSiteSettings, setAdminTab } = useSchool();
   const [form, setForm] = useState({ ...siteSettings });
   const [saved, setSaved] = useState(false);
   const [uploadingTarget, setUploadingTarget] = useState<string | null>(null);
@@ -79,6 +81,29 @@ export const ManageSiteSettings: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6 text-xs">
+        {/* Header, Top Bar & Ticker Banner Card */}
+        <div className="bg-emerald-950 text-white rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 bg-emerald-800 rounded-lg text-emerald-300">
+                <Sliders className="w-4 h-4" />
+              </span>
+              <h3 className="text-sm font-bold text-white">হেডার, টপ বার ও মুভিং নোটিফিকেশন বার সেটিংস</h3>
+            </div>
+            <p className="text-xs text-emerald-200">
+              ন্যাভবারের টপ বার Show/Hide, ন্যাভবারের উচ্চতা (Height) কম-বেশি এবং মুভিং নোটিশ বারের স্ক্রোলিং গতি (Speed) নিয়ন্ত্রণ করুন
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAdminTab('header_settings')}
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 shadow-xs"
+          >
+            <span>হেডার ও নোটিফিকেশন বার কন্ট্রোলার খুলুন</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
         {/* Section 1: প্রাথমিক তথ্য */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6 space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
@@ -297,14 +322,56 @@ export const ManageSiteSettings: React.FC = () => {
               />
             </div>
 
-            <div className="sm:col-span-2">
-              <label className="block font-semibold text-gray-700 mb-1">Google Map Embed URL</label>
+            <div className="sm:col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block font-semibold text-gray-700">Google Map Embed URL</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const q = encodeURIComponent(`${form.schoolNameBangla || 'দাদরা উচ্চ বিদ্যালয়'}, ${form.address || 'জয়পুরহাট'}`);
+                    setForm({
+                      ...form,
+                      googleMapEmbedUrl: `https://maps.google.com/maps?q=${q}&t=&z=15&ie=UTF8&iwloc=&output=embed`,
+                    });
+                  }}
+                  className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
+                >
+                  ⚡ ঠিকানা অনুযায়ী অটো ম্যাপ তৈরি করুন
+                </button>
+              </div>
               <input
                 type="text"
+                placeholder="Google Maps Embed URL অথবা iframe কোড দিন"
                 value={form.googleMapEmbedUrl || ''}
-                onChange={(e) => setForm({ ...form, googleMapEmbedUrl: e.target.value })}
+                onChange={(e) => {
+                  let val = e.target.value;
+                  if (val.includes('<iframe')) {
+                    const m = val.match(/src=["'](.*?)["']/);
+                    if (m && m[1]) val = m[1];
+                  }
+                  setForm({ ...form, googleMapEmbedUrl: val });
+                }}
                 className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-hidden focus:border-emerald-600 font-mono text-[11px]"
               />
+              <p className="text-[10px] text-gray-500">
+                টিপস: গুগল ম্যাপ থেকে Share {'>'} Embed a map এর লিংক পেস্ট করতে পারেন অথবা উপরের অটো ম্যাপ বাটন চাপুন।
+              </p>
+
+              {/* Map Preview */}
+              <div className="mt-2 h-44 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+                <iframe
+                  title="Admin Map Preview"
+                  src={
+                    form.googleMapEmbedUrl && !form.googleMapEmbedUrl.includes('pb=!1m18!1m12!1m3!1d3648.5')
+                      ? form.googleMapEmbedUrl
+                      : `https://maps.google.com/maps?q=${encodeURIComponent(
+                          `${form.schoolNameBangla || 'দাদরা উচ্চ বিদ্যালয়'}, ${form.address || 'জয়পুরহাট'}`
+                        )}&t=&z=15&ie=UTF8&iwloc=&output=embed`
+                  }
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                />
+              </div>
             </div>
           </div>
         </div>

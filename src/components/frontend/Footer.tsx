@@ -122,7 +122,7 @@ export const Footer: React.FC = () => {
                 </button>
               </li>
               <li>
-                <button onClick={navigateToNotices} className="text-amber-300 font-semibold hover:text-white transition cursor-pointer">
+                <button onClick={navigateToNotices} className="hover:text-amber-300 transition cursor-pointer">
                   সকল নোটিশ আর্কাইভ
                 </button>
               </li>

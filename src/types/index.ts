@@ -192,6 +192,26 @@ export interface SiteSettings {
   gpa5Count: string;
   totalClassrooms: string;
   totalAwards: string;
+
+  // Header & Top Bar Settings
+  showTopBar?: boolean;
+  topBarPhone?: string;
+  topBarEmail?: string;
+  topBarOfficeHours?: string;
+  topBarFacebookText?: string;
+  topBarFacebookUrl?: string;
+  topBarYoutubeText?: string;
+  topBarYoutubeUrl?: string;
+  topBarInstagramText?: string;
+  topBarInstagramUrl?: string;
+  topBarAdminText?: string;
+  navbarHeight?: 'compact' | 'normal' | 'spacious' | 'custom';
+  navbarPaddingY?: number; // in pixels (e.g. 6 to 24)
+
+  // Notice Ticker Settings
+  showNoticeTicker?: boolean;
+  noticeTickerSpeed?: number; // in seconds (e.g. 15 to 120, default 60)
+  noticeTickerLabel?: string;
 }
 
 export interface ActivityLog {
