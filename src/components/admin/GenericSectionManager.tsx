@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSchool, AdminTab } from '../../context/SchoolContext';
+import { ManageStaff } from './ManageStaff';
 import {
   Plus,
   Trash2,
@@ -35,11 +36,6 @@ export const GenericSectionManager: React.FC<Props> = ({ tab }) => {
 
   const [saved, setSaved] = useState(false);
 
-  // New staff form state
-  const [newStaffName, setNewStaffName] = useState('');
-  const [newStaffRole, setNewStaffRole] = useState('');
-  const [newStaffPhone, setNewStaffPhone] = useState('');
-
   // New Achievement form state
   const [newAchTitle, setNewAchTitle] = useState('');
   const [newAchCat, setNewAchCat] = useState('একাডেমিক');
@@ -53,94 +49,7 @@ export const GenericSectionManager: React.FC<Props> = ({ tab }) => {
 
   // Render for Staff
   if (tab === 'staff') {
-    return (
-      <div className="p-6 sm:p-8 space-y-6 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">কর্মচারী ব্যবস্থাপনা</h1>
-            <p className="text-xs text-gray-500">বিদ্যালয়ের অফিস, ল্যাব ও নিরাপত্তা সহকর্মীদের তালিকা</p>
-          </div>
-        </div>
-
-        {/* Add Staff form */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">নতুন কর্মচারী যুক্ত করুন</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <input
-              type="text"
-              placeholder="কর্মচারীর নাম"
-              value={newStaffName}
-              onChange={(e) => setNewStaffName(e.target.value)}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs"
-            />
-            <input
-              type="text"
-              placeholder="পদবী (যেমন: প্রধান সহকারী)"
-              value={newStaffRole}
-              onChange={(e) => setNewStaffRole(e.target.value)}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs"
-            />
-            <input
-              type="text"
-              placeholder="মোবাইল নম্বর"
-              value={newStaffPhone}
-              onChange={(e) => setNewStaffPhone(e.target.value)}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs"
-            />
-            <button
-              onClick={() => {
-                if (!newStaffName.trim() || !newStaffRole.trim()) return;
-                addStaff({
-                  name: newStaffName,
-                  designation: newStaffRole,
-                  department: 'প্রশাসন',
-                  phone: newStaffPhone || '+8801700000000',
-                  email: 'staff@dadrahs.edu.bd',
-                  initial: newStaffName.charAt(0),
-                });
-                setNewStaffName('');
-                setNewStaffRole('');
-                setNewStaffPhone('');
-              }}
-              className="bg-[#15803d] hover:bg-[#166534] text-white px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer"
-            >
-              যোগ করুন
-            </button>
-          </div>
-        </div>
-
-        {/* Staff Table */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
-          <table className="w-full text-left text-xs text-gray-600">
-            <thead className="bg-gray-50 text-gray-700 uppercase text-[11px]">
-              <tr>
-                <th className="py-3 px-4">নাম</th>
-                <th className="py-3 px-4">পদবী</th>
-                <th className="py-3 px-4">মোবাইল নম্বর</th>
-                <th className="py-3 px-4 text-right">পদক্ষেপ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {staff.map((s) => (
-                <tr key={s.id} className="hover:bg-gray-50/60">
-                  <td className="py-3 px-4 font-bold text-gray-900">{s.name}</td>
-                  <td className="py-3 px-4 text-emerald-800 font-semibold">{s.designation || s.role}</td>
-                  <td className="py-3 px-4 font-mono">{s.phone}</td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => deleteStaff(s.id)}
-                      className="p-1.5 rounded text-rose-600 hover:bg-rose-50 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
+    return <ManageStaff />;
   }
 
   // Render for Achievements

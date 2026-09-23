@@ -18,7 +18,10 @@ import {
   AlertCircle,
   Clock,
   Layers,
+  Image as ImageIcon,
+  ExternalLink,
 } from 'lucide-react';
+import { triggerFileDownload, openFileInNewTab } from '../../utils/fileDownloader';
 
 export const DedicatedNoticesPage: React.FC = () => {
   const { siteSettings, setCurrentFrontendPage, notices } = useSchool();
@@ -386,6 +389,28 @@ export const DedicatedNoticesPage: React.FC = () => {
                         </span>
                       )}
 
+                      {notice.attachmentUrl && (
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                            notice.attachmentType === 'pdf'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}
+                        >
+                          {notice.attachmentType === 'pdf' ? (
+                            <>
+                              <FileText className="w-2.5 h-2.5" />
+                              <span>PDF ফাইল</span>
+                            </>
+                          ) : (
+                            <>
+                              <ImageIcon className="w-2.5 h-2.5" />
+                              <span>ছবি সংযুক্ত</span>
+                            </>
+                          )}
+                        </span>
+                      )}
+
                       {notice.code && (
                         <span className="text-[10px] font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
                           স্মারক: {notice.code}
@@ -448,6 +473,28 @@ export const DedicatedNoticesPage: React.FC = () => {
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
                         <Pin className="w-2.5 h-2.5 fill-amber-500" />
                         <span>পিন্ড</span>
+                      </span>
+                    )}
+
+                    {notice.attachmentUrl && (
+                      <span
+                        className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                          notice.attachmentType === 'pdf'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
+                        }`}
+                      >
+                        {notice.attachmentType === 'pdf' ? (
+                          <>
+                            <FileText className="w-2.5 h-2.5" />
+                            <span>PDF</span>
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon className="w-2.5 h-2.5" />
+                            <span>ছবি</span>
+                          </>
+                        )}
                       </span>
                     )}
                   </div>
@@ -631,6 +678,108 @@ export const DedicatedNoticesPage: React.FC = () => {
               <div className="text-xs sm:text-sm text-gray-700 leading-relaxed space-y-3 whitespace-pre-line bg-[#fcfaf7] p-5 rounded-xl border border-gray-200/70">
                 {selectedNotice.content}
               </div>
+
+              {/* Notice Photo / PDF Attachment */}
+              {selectedNotice.attachmentUrl && (
+                <div className="space-y-3 pt-3 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-gray-800 flex items-center gap-1.5">
+                      {selectedNotice.attachmentType === 'pdf' ? (
+                        <>
+                          <FileText className="w-4 h-4 text-rose-600" />
+                          <span>সংযুক্ত অফিসিয়াল পিডিএফ কপি:</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-4 h-4 text-emerald-600" />
+                          <span>সংযুক্ত অফিসিয়াল নোটিশের ছবি:</span>
+                        </>
+                      )}
+                    </span>
+                    {selectedNotice.attachmentSize && (
+                      <span className="text-[10px] text-gray-400 font-mono">
+                        ফাইলের আকার: {selectedNotice.attachmentSize}
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedNotice.attachmentType === 'image' ? (
+                    <div className="space-y-2">
+                      <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center p-2">
+                        <img
+                          src={selectedNotice.attachmentUrl}
+                          alt={selectedNotice.attachmentName || selectedNotice.title}
+                          className="max-h-96 w-auto object-contain rounded-lg"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 print:hidden">
+                        <button
+                          type="button"
+                          onClick={() => openFileInNewTab(selectedNotice.attachmentUrl!)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-semibold transition cursor-pointer border border-emerald-200"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>নতুন ট্যাবে দেখুন</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            triggerFileDownload(
+                              selectedNotice.attachmentUrl!,
+                              selectedNotice.attachmentName || 'notice-photo.jpg'
+                            )
+                          }
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#15803d] hover:bg-[#166534] text-white rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>ছবি ডাউনলোড</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-rose-50/70 border border-rose-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-xl bg-rose-100 border border-rose-200 flex flex-col items-center justify-center text-rose-700 shrink-0">
+                          <FileText className="w-6 h-6" />
+                          <span className="text-[9px] font-black uppercase">PDF</span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">
+                            {selectedNotice.attachmentName || 'অফিসিয়াল বিজ্ঞপ্তি ডকুমেন্ট.pdf'}
+                          </p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">
+                            মুদ্রণযোগ্য ও সত্যায়িত পিডিএফ অনুলিপি
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-center shrink-0 print:hidden">
+                        <button
+                          type="button"
+                          onClick={() => openFileInNewTab(selectedNotice.attachmentUrl!)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>পিডিএফ দেখুন</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            triggerFileDownload(
+                              selectedNotice.attachmentUrl!,
+                              selectedNotice.attachmentName || 'notice-document.pdf'
+                            )
+                          }
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold shadow-xs transition cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>ডাউনলোড</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Signature Block */}

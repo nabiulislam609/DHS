@@ -11,6 +11,7 @@ import { ManageEvents } from './ManageEvents';
 import { ManageGallery } from './ManageGallery';
 import { ManageSiteSettings } from './ManageSiteSettings';
 import { ManageStudents } from './ManageStudents';
+import { ManageStaff } from './ManageStaff';
 import { ManageLeadership } from './ManageLeadership';
 import { ManageExamResults } from './ManageExamResults';
 import { ManageHeroSlides } from './ManageHeroSlides';
@@ -58,6 +59,8 @@ export const AdminPanel: React.FC = () => {
         return <ManagePerformanceTrends />;
       case 'students':
         return <ManageStudents />;
+      case 'staff':
+        return <ManageStaff />;
       case 'leadership':
         return <ManageLeadership />;
       default:

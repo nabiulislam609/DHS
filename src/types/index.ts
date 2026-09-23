@@ -33,6 +33,7 @@ export interface Student {
   class?: string;
   group?: string;
   guardianPhone?: string;
+  image?: string;
 }
 
 export interface Notice {
@@ -44,6 +45,10 @@ export interface Notice {
   pinned: boolean;
   content: string;
   downloadUrl?: string;
+  attachmentUrl?: string;
+  attachmentType?: 'image' | 'pdf';
+  attachmentName?: string;
+  attachmentSize?: string;
 }
 
 export interface LeadershipMessage {

@@ -52,3 +52,59 @@ export const compressImageFile = (
     reader.readAsDataURL(file);
   });
 };
+
+export const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
+
+export interface ProcessedAttachment {
+  dataUrl: string;
+  type: 'image' | 'pdf';
+  name: string;
+  size: string;
+}
+
+/**
+ * Handles uploading photos or PDF documents for Notices from user's device.
+ */
+export const processNoticeFile = async (file: File): Promise<ProcessedAttachment> => {
+  const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|bmp)$/i.test(file.name);
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+
+  if (!isImage && !isPdf) {
+    throw new Error('শুধুমাত্র ছবি (JPG, PNG, WebP) অথবা পিডিএফ (.pdf) ফাইল আপলোড করুন');
+  }
+
+  // Safety check for file size (8MB max)
+  const maxBytes = 8 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    throw new Error('ফাইলের আকার ৮ মেগাবাইট (8 MB) এর কম হতে হবে');
+  }
+
+  if (isImage) {
+    const compressed = await compressImageFile(file, 1200, 1200, 0.85);
+    return {
+      dataUrl: compressed,
+      type: 'image',
+      name: file.name,
+      size: formatFileSize(file.size),
+    };
+  }
+
+  // PDF processing
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('পিডিএফ ফাইলটি পড়তে ব্যর্থ হয়েছে'));
+    reader.onload = () => {
+      resolve({
+        dataUrl: reader.result as string,
+        type: 'pdf',
+        name: file.name,
+        size: formatFileSize(file.size),
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+};

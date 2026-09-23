@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
 import { useSchool } from '../../context/SchoolContext';
-import { Pin, Calendar, Tag, ArrowRight, Eye, X } from 'lucide-react';
+import {
+  Pin,
+  Calendar,
+  Tag,
+  ArrowRight,
+  Eye,
+  X,
+  FileText,
+  Download,
+  ExternalLink,
+  Image as ImageIcon,
+} from 'lucide-react';
 import { Notice } from '../../types';
+import { triggerFileDownload, openFileInNewTab } from '../../utils/fileDownloader';
 
 export const NoticeBoard: React.FC = () => {
   const { notices, setCurrentFrontendPage } = useSchool();
@@ -70,12 +82,37 @@ export const NoticeBoard: React.FC = () => {
             {/* Pinned Card Content */}
             <div className="p-6 flex-1 flex flex-col justify-between">
               <div>
-                <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>{pinnedNotice?.date}</span>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 mb-2">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>{pinnedNotice?.date}</span>
+                  </span>
                   <span>•</span>
-                  <Tag className="w-3.5 h-3.5" />
-                  <span>গুরুত্বপূর্ণ</span>
+                  <span className="flex items-center gap-1">
+                    <Tag className="w-3.5 h-3.5" />
+                    <span>গুরুত্বপূর্ণ</span>
+                  </span>
+                  {pinnedNotice?.attachmentUrl && (
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                        pinnedNotice.attachmentType === 'pdf'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                      }`}
+                    >
+                      {pinnedNotice.attachmentType === 'pdf' ? (
+                        <>
+                          <FileText className="w-2.5 h-2.5" />
+                          <span>PDF</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-2.5 h-2.5" />
+                          <span>ছবি</span>
+                        </>
+                      )}
+                    </span>
+                  )}
                 </div>
 
                 <h3 className="text-lg font-bold text-gray-900 mb-3 hover:text-emerald-700 transition">
@@ -120,7 +157,7 @@ export const NoticeBoard: React.FC = () => {
                     onClick={() => setSelectedNotice(item)}
                     className="py-3.5 flex items-center justify-between gap-4 hover:bg-gray-50/80 px-2 rounded-lg transition cursor-pointer group"
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
                       {/* Date Badge */}
                       <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex flex-col items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition">
                         <span className="text-sm font-bold text-emerald-900 group-hover:text-white leading-none">
@@ -132,8 +169,8 @@ export const NoticeBoard: React.FC = () => {
                       </div>
 
                       {/* Content */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                           <span
                             className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${getCategoryColor(
                               item.category
@@ -147,8 +184,29 @@ export const NoticeBoard: React.FC = () => {
                               পিন্ড
                             </span>
                           )}
+                          {item.attachmentUrl && (
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                                item.attachmentType === 'pdf'
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  : 'bg-blue-50 text-blue-700 border-blue-200'
+                              }`}
+                            >
+                              {item.attachmentType === 'pdf' ? (
+                                <>
+                                  <FileText className="w-2.5 h-2.5" />
+                                  <span>PDF</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ImageIcon className="w-2.5 h-2.5" />
+                                  <span>ছবি</span>
+                                </>
+                              )}
+                            </span>
+                          )}
                         </div>
-                        <h4 className="text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition">
+                        <h4 className="text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition truncate">
                           {item.title}
                         </h4>
                         <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">
@@ -183,10 +241,10 @@ export const NoticeBoard: React.FC = () => {
       {/* Notice Detail Modal */}
       {selectedNotice && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative border border-gray-100">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative border border-gray-100 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setSelectedNotice(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -200,13 +258,101 @@ export const NoticeBoard: React.FC = () => {
               </span>
             </div>
 
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-3">
               {selectedNotice.code ? `${selectedNotice.code}: ` : ''}{selectedNotice.title}
             </h3>
 
             <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border border-gray-100">
               {selectedNotice.content}
             </div>
+
+            {/* Notice Attachment Block */}
+            {selectedNotice.attachmentUrl && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                {selectedNotice.attachmentType === 'image' ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold flex items-center gap-1.5 text-emerald-800">
+                        <ImageIcon className="w-4 h-4 text-emerald-600" />
+                        <span>সংযুক্ত ছবি:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          triggerFileDownload(
+                            selectedNotice.attachmentUrl!,
+                            selectedNotice.attachmentName || 'notice-photo.jpg'
+                          )
+                        }
+                        className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-semibold cursor-pointer text-xs"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>ডাউনলোড</span>
+                      </button>
+                    </div>
+
+                    <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 max-h-72 flex items-center justify-center">
+                      <img
+                        src={selectedNotice.attachmentUrl}
+                        alt={selectedNotice.attachmentName || selectedNotice.title}
+                        className="max-h-72 w-full object-contain cursor-pointer hover:opacity-95 transition"
+                        onClick={() => openFileInNewTab(selectedNotice.attachmentUrl!)}
+                        title="নতুন ট্যাবে দেখতে ক্লিক করুন"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <span className="font-bold flex items-center gap-1.5 text-xs text-rose-800">
+                      <FileText className="w-4 h-4 text-rose-600" />
+                      <span>সংযুক্ত অফিসিয়াল পিডিএফ:</span>
+                    </span>
+
+                    <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <div className="w-9 h-9 rounded-lg bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-700 shrink-0">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-gray-800 truncate">
+                            {selectedNotice.attachmentName || 'অফিসিয়াল নোটিশ ডকুমেন্ট.pdf'}
+                          </p>
+                          {selectedNotice.attachmentSize && (
+                            <p className="text-[10px] text-gray-500 font-mono">
+                              ফাইলের আকার: {selectedNotice.attachmentSize}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openFileInNewTab(selectedNotice.attachmentUrl!)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition cursor-pointer"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>পিডিএফ দেখুন</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            triggerFileDownload(
+                              selectedNotice.attachmentUrl!,
+                              selectedNotice.attachmentName || 'notice-document.pdf'
+                            )
+                          }
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold shadow-2xs transition cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>ডাউনলোড</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-6 flex justify-end">
               <button
