@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSchool } from '../../context/SchoolContext';
 import { Header } from './Header';
 import { HeroSlider } from './HeroSlider';
 import { NoticeTicker } from './NoticeTicker';
@@ -18,23 +19,25 @@ import { Footer } from './Footer';
 import { AdmissionModal } from './AdmissionModal';
 
 export const FrontendView: React.FC = () => {
+  const { sectionVisibility } = useSchool();
+
   return (
     <div className="min-h-screen bg-[#fafaf9] text-gray-800 flex flex-col antialiased selection:bg-emerald-200 selection:text-emerald-900">
       <Header />
-      <NoticeTicker />
-      <HeroSlider />
-      <QuickActions />
-      <NoticeBoard />
-      <LeadershipMessages />
-      <AboutSection />
-      <AcademicPrograms />
-      <SchoolStats />
-      <ResultsTrend />
-      <NewsSection />
-      <EventsSection />
-      <AchievementsSection />
-      <GallerySection />
-      <ContactSection />
+      {sectionVisibility.ticker && <NoticeTicker />}
+      {sectionVisibility.hero && <HeroSlider />}
+      {sectionVisibility.quick_actions && <QuickActions />}
+      {sectionVisibility.notices && <NoticeBoard />}
+      {sectionVisibility.leadership && <LeadershipMessages />}
+      {sectionVisibility.about && <AboutSection />}
+      {sectionVisibility.programs && <AcademicPrograms />}
+      {sectionVisibility.stats && <SchoolStats />}
+      {sectionVisibility.results_trend && <ResultsTrend />}
+      {sectionVisibility.news && <NewsSection />}
+      {sectionVisibility.events && <EventsSection />}
+      {sectionVisibility.achievements && <AchievementsSection />}
+      {sectionVisibility.gallery && <GallerySection />}
+      {sectionVisibility.contact && <ContactSection />}
       <Footer />
       <AdmissionModal />
     </div>

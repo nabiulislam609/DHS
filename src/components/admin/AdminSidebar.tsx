@@ -57,7 +57,7 @@ export const AdminSidebar: React.FC = () => {
       items: [
         { id: 'dashboard' as AdminTab, label: 'ড্যাশবোর্ড', icon: LayoutDashboard },
         { id: 'settings' as AdminTab, label: 'সাইট সেটিংস', icon: Settings },
-        { id: 'sections' as AdminTab, label: 'হোমপেজ সেকশন', icon: LayoutTemplate },
+        { id: 'sections' as AdminTab, label: 'হোমপেজ সেকশন (Show/Hide)', icon: LayoutTemplate },
       ],
     },
     {
@@ -93,7 +93,7 @@ export const AdminSidebar: React.FC = () => {
         { id: 'results' as AdminTab, label: 'Exam Results Sheet', icon: Bookmark },
         { id: 'programs' as AdminTab, label: 'প্রোগ্রাম', icon: BookOpen },
         { id: 'statistics' as AdminTab, label: 'পরিসংখ্যান', icon: BarChart3 },
-        { id: 'performance' as AdminTab, label: 'পারফরম্যান্স', icon: Award },
+        { id: 'performance' as AdminTab, label: 'ফলাফলের ধারা চার্ট', icon: Award },
       ],
     },
     {

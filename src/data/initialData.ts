@@ -16,6 +16,8 @@ import {
   ExamResult,
   HeroSlide,
   NavigationItem,
+  PerformanceTrendItem,
+  SectionVisibility,
 } from '../types';
 
 export const initialSiteSettings: SiteSettings = {
@@ -678,3 +680,28 @@ export const initialExamResults: ExamResult[] = [
     ],
   },
 ];
+
+export const initialPerformanceTrends: PerformanceTrendItem[] = [
+  { id: 'trend-2021', year: '2021', passRate: 95.0, aPlus: 28, gpa: 4.42 },
+  { id: 'trend-2022', year: '2022', passRate: 96.5, aPlus: 32, gpa: 4.58 },
+  { id: 'trend-2023', year: '2023', passRate: 97.8, aPlus: 38, gpa: 4.70 },
+  { id: 'trend-2024', year: '2024', passRate: 98.7, aPlus: 42, gpa: 4.82 },
+  { id: 'trend-2025', year: '2025', passRate: 99.1, aPlus: 45, gpa: 4.91 },
+];
+
+export const initialSectionVisibility: SectionVisibility = {
+  ticker: true,
+  hero: true,
+  quick_actions: true,
+  notices: true,
+  leadership: true,
+  about: true,
+  programs: true,
+  stats: true,
+  results_trend: true,
+  news: true,
+  events: true,
+  achievements: true,
+  gallery: true,
+  contact: true,
+};

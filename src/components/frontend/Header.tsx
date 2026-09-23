@@ -52,12 +52,20 @@ export const Header: React.FC = () => {
 
     if (currentFrontendPage !== 'home') {
       setCurrentFrontendPage('home');
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const tickerEl = document.getElementById('notice-ticker');
+        if (tickerEl) {
+          tickerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 60);
+      return;
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    const heroEl = document.getElementById('hero') || document.getElementById('home');
-    if (heroEl) {
-      heroEl.scrollIntoView({ behavior: 'smooth' });
+    const tickerEl = document.getElementById('notice-ticker');
+    if (tickerEl) {
+      tickerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -121,7 +129,7 @@ export const Header: React.FC = () => {
   return (
     <header className="w-full bg-white shadow-xs border-b border-gray-100 sticky top-0 z-40">
       {/* Top Bar with Deep Green Background */}
-      <div className="bg-[#0f5338] text-white text-xs py-2 px-4 sm:px-8">
+      <div className="bg-[#0f5338] text-white text-xs py-1 sm:py-1.5 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           {/* Left Contact Info */}
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
@@ -163,32 +171,32 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Main Navbar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-2 sm:py-2.5 flex items-center justify-between">
         {/* Brand Logo & Name */}
-        <div className="flex items-center gap-3 cursor-pointer" onClick={handleHomeClick}>
+        <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer" onClick={handleHomeClick}>
           {siteSettings.logoUrl ? (
             <img
               src={siteSettings.logoUrl}
               alt="Logo"
-              className="w-12 h-12 rounded-full object-cover border-2 border-emerald-800 shadow-xs bg-white"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-emerald-800 shadow-xs bg-white"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-amber-400 border-2 border-emerald-800 flex items-center justify-center shadow-xs text-emerald-950 font-bold">
-              <GraduationCap className="w-7 h-7 text-emerald-900" />
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-amber-400 border-2 border-emerald-800 flex items-center justify-center shadow-xs text-emerald-950 font-bold">
+              <GraduationCap className="w-6 h-6 text-emerald-900" />
             </div>
           )}
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-emerald-900 leading-tight">
+            <h1 className="text-lg sm:text-xl font-bold text-emerald-900 leading-tight">
               {siteSettings.schoolNameBangla}
             </h1>
-            <p className="text-xs text-gray-500 font-medium tracking-wide">
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium tracking-wide">
               {siteSettings.schoolNameEnglish}
             </p>
           </div>
         </div>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden xl:flex items-center gap-5 text-sm font-medium text-gray-700">
+        <nav className="hidden xl:flex items-center gap-4 sm:gap-4.5 text-[13px] sm:text-sm font-medium text-gray-700">
           {processedNavItems.map((item) => {
             const isAbout = item.label === 'পরিচিতি' || item.url === '#about';
             if (isAbout) {
@@ -313,7 +321,7 @@ export const Header: React.FC = () => {
           {/* Admission Apply Button */}
           <button
             onClick={() => setIsAdmissionModalOpen(true)}
-            className="bg-[#15803d] hover:bg-[#166534] text-white px-4 py-2 rounded-md font-semibold shadow-xs hover:shadow transition cursor-pointer text-sm"
+            className="bg-[#15803d] hover:bg-[#166534] text-white px-3.5 py-1.5 rounded-lg font-semibold shadow-xs hover:shadow transition cursor-pointer text-xs sm:text-sm"
           >
             ভর্তি আবেদন
           </button>

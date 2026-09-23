@@ -15,6 +15,8 @@ import { ManageLeadership } from './ManageLeadership';
 import { ManageExamResults } from './ManageExamResults';
 import { ManageHeroSlides } from './ManageHeroSlides';
 import { ManageNavigation } from './ManageNavigation';
+import { ManageHomepageSections } from './ManageHomepageSections';
+import { ManagePerformanceTrends } from './ManagePerformanceTrends';
 import { GenericSectionManager } from './GenericSectionManager';
 import { Eye, Bell, ShieldCheck } from 'lucide-react';
 
@@ -47,6 +49,10 @@ export const AdminPanel: React.FC = () => {
         return <ManageHeroSlides />;
       case 'navigation':
         return <ManageNavigation />;
+      case 'sections':
+        return <ManageHomepageSections />;
+      case 'performance':
+        return <ManagePerformanceTrends />;
       case 'students':
         return <ManageStudents />;
       case 'leadership':

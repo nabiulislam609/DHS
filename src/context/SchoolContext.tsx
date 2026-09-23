@@ -17,6 +17,8 @@ import {
   ExamResult,
   HeroSlide,
   NavigationItem,
+  PerformanceTrendItem,
+  SectionVisibility,
 } from '../types';
 import {
   initialSiteSettings,
@@ -36,6 +38,8 @@ import {
   initialExamResults,
   initialHeroSlides,
   initialNavigationItems,
+  initialPerformanceTrends,
+  initialSectionVisibility,
 } from '../data/initialData';
 
 export type ViewMode = 'frontend' | 'backend';
@@ -160,6 +164,19 @@ interface SchoolContextType {
   activities: ActivityLog[];
   logActivity: (action: string, type: ActivityLog['type']) => void;
   clearActivities: () => void;
+
+  // Performance Trends (এসএসসি ফলাফলের ধারা / চার্ট ডাটা)
+  performanceTrends: PerformanceTrendItem[];
+  addPerformanceTrend: (trend: Omit<PerformanceTrendItem, 'id'>) => void;
+  updatePerformanceTrend: (id: string, trend: Partial<PerformanceTrendItem>) => void;
+  deletePerformanceTrend: (id: string) => void;
+  resetPerformanceTrends: () => void;
+
+  // Homepage Sections Show / Hide Visibility
+  sectionVisibility: SectionVisibility;
+  toggleSectionVisibility: (sectionKey: keyof SectionVisibility) => void;
+  updateSectionVisibility: (updates: Partial<SectionVisibility>) => void;
+  resetSectionVisibility: () => void;
 
   // Quick stats
   unreadMessageCount: number;
@@ -313,6 +330,16 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return saved ? JSON.parse(saved) : initialHeroSlides;
   });
 
+  const [performanceTrends, setPerformanceTrends] = useState<PerformanceTrendItem[]>(() => {
+    const saved = localStorage.getItem('dhs_performance_trends');
+    return saved ? JSON.parse(saved) : initialPerformanceTrends;
+  });
+
+  const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(() => {
+    const saved = localStorage.getItem('dhs_section_visibility');
+    return saved ? { ...initialSectionVisibility, ...JSON.parse(saved) } : initialSectionVisibility;
+  });
+
   const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(() => {
     const saved = localStorage.getItem('dhs_navigation_items');
     if (saved) {
@@ -363,6 +390,14 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem('dhs_hero_slides', JSON.stringify(heroSlides));
   }, [heroSlides]);
+
+  useEffect(() => {
+    localStorage.setItem('dhs_performance_trends', JSON.stringify(performanceTrends));
+  }, [performanceTrends]);
+
+  useEffect(() => {
+    localStorage.setItem('dhs_section_visibility', JSON.stringify(sectionVisibility));
+  }, [sectionVisibility]);
 
   useEffect(() => {
     localStorage.setItem('dhs_navigation_items', JSON.stringify(navigationItems));
@@ -779,6 +814,66 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     logActivity(`বার্তা মুছে ফেলা হয়েছে`, 'message');
   };
 
+  // Performance Trends Methods
+  const addPerformanceTrend = (trend: Omit<PerformanceTrendItem, 'id'>) => {
+    const newItem: PerformanceTrendItem = {
+      ...trend,
+      id: `trend-${Date.now()}`,
+    };
+    setPerformanceTrends((prev) =>
+      [...prev, newItem].sort((a, b) => a.year.localeCompare(b.year))
+    );
+    logActivity(`নতুন পারফরম্যান্স চার্ট ডাটা যোগ করা হয়েছে (${trend.year})`, 'setting');
+  };
+
+  const updatePerformanceTrend = (id: string, updated: Partial<PerformanceTrendItem>) => {
+    setPerformanceTrends((prev) =>
+      prev
+        .map((t) => (t.id === id ? { ...t, ...updated } : t))
+        .sort((a, b) => a.year.localeCompare(b.year))
+    );
+    logActivity(`পারফরম্যান্স চার্ট ডাটা আপডেট করা হয়েছে`, 'setting');
+  };
+
+  const deletePerformanceTrend = (id: string) => {
+    setPerformanceTrends((prev) => prev.filter((t) => t.id !== id));
+    logActivity(`পারফরম্যান্স চার্ট ডাটা মুছে ফেলা হয়েছে`, 'setting');
+  };
+
+  const resetPerformanceTrends = () => {
+    setPerformanceTrends(initialPerformanceTrends);
+    localStorage.setItem(
+      'dhs_performance_trends',
+      JSON.stringify(initialPerformanceTrends)
+    );
+    logActivity(`পারফরম্যান্স চার্ট ডাটা ডিফল্ট অবস্থায় রিসেট করা হয়েছে`, 'setting');
+  };
+
+  // Section Visibility Methods
+  const toggleSectionVisibility = (sectionKey: keyof SectionVisibility) => {
+    setSectionVisibility((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
+    logActivity(`হোমপেজ সেকশন শো/হাইড পরিবর্তিত হয়েছে (${sectionKey})`, 'setting');
+  };
+
+  const updateSectionVisibility = (updates: Partial<SectionVisibility>) => {
+    setSectionVisibility((prev) => ({
+      ...prev,
+      ...updates,
+    }));
+  };
+
+  const resetSectionVisibility = () => {
+    setSectionVisibility(initialSectionVisibility);
+    localStorage.setItem(
+      'dhs_section_visibility',
+      JSON.stringify(initialSectionVisibility)
+    );
+    logActivity(`হোমপেজ সেকশনসমূহ ডিফল্ট অবস্থায় রিসেট করা হয়েছে`, 'setting');
+  };
+
   const unreadMessageCount = messages.filter((m) => !m.read).length;
   const totalGalleryPhotos = galleryAlbums.reduce(
     (acc, alb) => acc + (alb.images ? alb.images.length : 1),
@@ -866,6 +961,15 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         activities,
         logActivity,
         clearActivities,
+        performanceTrends,
+        addPerformanceTrend,
+        updatePerformanceTrend,
+        deletePerformanceTrend,
+        resetPerformanceTrends,
+        sectionVisibility,
+        toggleSectionVisibility,
+        updateSectionVisibility,
+        resetSectionVisibility,
         unreadMessageCount,
         totalGalleryPhotos,
       }}

@@ -21,7 +21,7 @@ export const NoticeTicker: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-[#053527] border-b border-[#042b1f] text-white py-2.5 px-4 overflow-hidden relative z-20 shadow-xs">
+    <div id="notice-ticker" className="w-full bg-[#053527] border-b border-[#042b1f] text-white py-2 px-4 overflow-hidden relative z-20 shadow-xs">
       <div className="max-w-7xl mx-auto flex items-center gap-3">
         {/* Ticker Title Badge */}
         <div className="flex items-center gap-1.5 bg-[#0f4d3a] text-amber-300 border border-[#1b6a52] px-3.5 py-1 rounded-full text-xs font-bold shrink-0 shadow-xs">

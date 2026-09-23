@@ -223,3 +223,28 @@ export interface ExamResult {
   subjects: SubjectMark[];
   publishedDate?: string;
 }
+
+export interface PerformanceTrendItem {
+  id: string;
+  year: string;
+  passRate: number;
+  aPlus: number;
+  gpa: number;
+}
+
+export interface SectionVisibility {
+  ticker: boolean;
+  hero: boolean;
+  quick_actions: boolean;
+  notices: boolean;
+  leadership: boolean;
+  about: boolean;
+  programs: boolean;
+  stats: boolean;
+  results_trend: boolean;
+  news: boolean;
+  events: boolean;
+  achievements: boolean;
+  gallery: boolean;
+  contact: boolean;
+}
