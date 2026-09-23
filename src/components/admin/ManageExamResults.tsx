@@ -11,10 +11,29 @@ import {
   Award,
   BookOpen,
   PlusCircle,
+  RefreshCw,
+  UserCheck,
+  GraduationCap,
 } from 'lucide-react';
-import { ExamResult, SubjectMark } from '../../types';
+import { ExamResult, SubjectMark, Student } from '../../types';
+import {
+  CLASS_OPTIONS,
+  GROUP_OPTIONS,
+  isClassWithGroups,
+  getSubjectsForClassAndGroup,
+  getElectivesForClassAndGroup,
+} from '../../data/curriculumSubjects';
 
 export const AVAILABLE_CLASSES = [
+  '১০ম শ্রেণি (বিজ্ঞান)',
+  '১০ম শ্রেণি (মানবিক)',
+  '১০ম শ্রেণি (ব্যবসায় শিক্ষা)',
+  '৯ম শ্রেণি (বিজ্ঞান)',
+  '৯ম শ্রেণি (মানবিক)',
+  '৯ম শ্রেণি (ব্যবসায় শিক্ষা)',
+  '৮ম শ্রেণি',
+  '৭ম শ্রেণি',
+  '৬ষ্ঠ শ্রেণি',
   'Class 10 (১০ম শ্রেণি - বিজ্ঞান)',
   'Class 10 (১০ম শ্রেণি - মানবিক)',
   'Class 10 (১০ম শ্রেণি - ব্যবসায় শিক্ষা)',
@@ -44,40 +63,51 @@ export const AVAILABLE_EXAM_TERMS = [
 ];
 
 export const PRESET_SUBJECTS = [
-  'Bangla (1st & 2nd)',
-  'English (1st & 2nd)',
-  'Mathematics',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'Higher Mathematics',
-  'Information & Communication Technology (ICT)',
-  'Bangladesh & Global Studies',
-  'Islam & Moral Education',
-  'Hindu Religion & Moral Education',
-  'General Science',
-  'Accounting',
-  'Business Entrepreneurship',
-  'Finance & Banking',
-  'Agriculture Studies',
-  'Home Science',
-  'Physical Education & Health',
-  'Art & Craft',
-  'Career Education',
+  'বাংলা ১ম পত্র',
+  'বাংলা ২য় পত্র',
+  'ইংরেজি ১ম পত্র',
+  'ইংরেজি ২য় পত্র',
+  'সাধারণ গণিত',
+  'তথ্য ও যোগাযোগ প্রযুক্তি (ICT)',
+  'পদার্থবিজ্ঞান (Physics)',
+  'রসায়ন (Chemistry)',
+  'জীববিজ্ঞান (Biology)',
+  'উচ্চতর গণিত',
+  'কৃষিশিক্ষা',
+  'গার্হস্থ্য বিজ্ঞান',
+  'অর্থনীতি',
+  'বাংলাদেশ ও বিশ্বপরিচয়',
+  'ধর্ম ও নৈতিক শিক্ষা',
+  'সাধারণ বিজ্ঞান',
+  'বাংলাদেশের ইতিহাস ও বিশ্বসভ্যতা',
+  'ভূগোল ও পরিবেশ',
+  'পৌরনীতি ও নাগরিকতা',
+  'হিসাববিজ্ঞান (Accounting)',
+  'ব্যবসায় উদ্যোগ',
+  'ফিন্যান্স ও ব্যাংকিং',
+  'বাংলা — সাহিত্য কণিকা এবং ব্যাকরণ ও নির্মিতি',
+  'ইংরেজি — English for Today এবং Grammar & Composition',
+  'গণিত',
+  'বিজ্ঞান',
+  'শারীরিক শিক্ষা ও স্বাস্থ্য',
+  'চারু ও কারুকলা (Arts & Crafts)',
+  'কর্ম ও জীবনমুখী শিক্ষা',
 ];
 
 export const ManageExamResults: React.FC = () => {
-  const { examResults, addExamResult, deleteExamResult, updateExamResult } = useSchool();
+  const { examResults, students, addExamResult, deleteExamResult, updateExamResult } = useSchool();
   const [modalOpen, setModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewingResult, setViewingResult] = useState<ExamResult | null>(null);
 
   // Form State
+  const [selectedStudentId, setSelectedStudentId] = useState('');
   const [form, setForm] = useState({
     studentName: '',
     studentId: '',
     roll: '',
-    studentClass: AVAILABLE_CLASSES[0],
+    studentClass: '১০ম শ্রেণি',
+    studentGroup: 'বিজ্ঞান',
     section: 'A',
     examTerm: AVAILABLE_EXAM_TERMS[0],
     customTerm: '',
@@ -85,14 +115,7 @@ export const ManageExamResults: React.FC = () => {
     status: 'PUBLISHED' as 'PUBLISHED' | 'DRAFT',
   });
 
-  const [subjects, setSubjects] = useState<SubjectMark[]>([
-    { subject: 'Bangla (1st & 2nd)', marks: 160, gradePoint: 5.0, grade: 'A+' },
-    { subject: 'English (1st & 2nd)', marks: 155, gradePoint: 4.0, grade: 'A' },
-    { subject: 'Mathematics', marks: 90, gradePoint: 5.0, grade: 'A+' },
-    { subject: 'Physics', marks: 85, gradePoint: 5.0, grade: 'A+' },
-    { subject: 'Chemistry', marks: 82, gradePoint: 5.0, grade: 'A+' },
-    { subject: 'Biology', marks: 80, gradePoint: 5.0, grade: 'A+' },
-  ]);
+  const [subjects, setSubjects] = useState<SubjectMark[]>([]);
 
   // New Subject creation state
   const [newSubjectName, setNewSubjectName] = useState('');
@@ -107,6 +130,115 @@ export const ManageExamResults: React.FC = () => {
     if (marks >= 40) return { gp: 2.0, grade: 'C' };
     if (marks >= 33) return { gp: 1.0, grade: 'D' };
     return { gp: 0.0, grade: 'F' };
+  };
+
+  const generateDefaultSubjectMarks = (cls: string, grp?: string): SubjectMark[] => {
+    const names = getSubjectsForClassAndGroup(cls, grp);
+    return names.map((name) => {
+      const defaultScore = 80;
+      const { gp, grade } = calculateGrade(defaultScore);
+      return {
+        subject: name,
+        marks: defaultScore,
+        gradePoint: gp,
+        grade,
+      };
+    });
+  };
+
+  const isClass910 = isClassWithGroups(form.studentClass);
+  const currentElectives = getElectivesForClassAndGroup(form.studentClass, form.studentGroup);
+
+  const handleSelectElective = (electiveName: string) => {
+    if (subjects.some((s) => s.subject === electiveName)) return;
+
+    // Check if another elective from currentElectives exists in subjects
+    const existingIndex = subjects.findIndex((s) => currentElectives.includes(s.subject));
+    if (existingIndex >= 0) {
+      const next = [...subjects];
+      next[existingIndex] = {
+        ...next[existingIndex],
+        subject: electiveName,
+      };
+      setSubjects(next);
+    } else {
+      const defaultScore = 80;
+      const { gp, grade } = calculateGrade(defaultScore);
+      setSubjects((prev) => [
+        ...prev,
+        {
+          subject: electiveName,
+          marks: defaultScore,
+          gradePoint: gp,
+          grade,
+        },
+      ]);
+    }
+  };
+
+  const handleClassChange = (newClass: string) => {
+    const hasGrp = isClassWithGroups(newClass);
+    const newGrp = hasGrp
+      ? form.studentGroup && form.studentGroup !== 'সাধারণ'
+        ? form.studentGroup
+        : 'বিজ্ঞান'
+      : 'সাধারণ';
+
+    setForm((prev) => ({
+      ...prev,
+      studentClass: newClass,
+      studentGroup: newGrp,
+    }));
+
+    // Auto-update subjects
+    setSubjects(generateDefaultSubjectMarks(newClass, newGrp));
+  };
+
+  const handleGroupChange = (newGroup: string) => {
+    setForm((prev) => ({
+      ...prev,
+      studentGroup: newGroup,
+    }));
+
+    // Auto-update subjects
+    setSubjects(generateDefaultSubjectMarks(form.studentClass, newGroup));
+  };
+
+  const handleReloadDefaultSubjects = () => {
+    setSubjects(generateDefaultSubjectMarks(form.studentClass, form.studentGroup));
+  };
+
+  const handleQuickStudentSelect = (studentId: string) => {
+    setSelectedStudentId(studentId);
+    if (!studentId) return;
+
+    const stu = students.find((s) => s.id === studentId);
+    if (!stu) return;
+
+    const stuClass = stu.class || stu.studentClass || '১০ম শ্রেণি';
+    const hasGrp = isClassWithGroups(stuClass);
+    const stuGroup = hasGrp ? stu.group || 'বিজ্ঞান' : 'সাধারণ';
+
+    setForm((prev) => ({
+      ...prev,
+      studentName: stu.name,
+      roll: stu.roll,
+      studentId: `DHS-2026-${stu.roll}`,
+      studentClass: stuClass,
+      studentGroup: stuGroup,
+      section: stu.section || 'A',
+    }));
+
+    if (stu.subjects && stu.subjects.length > 0) {
+      setSubjects(
+        stu.subjects.map((sub) => {
+          const { gp, grade } = calculateGrade(80);
+          return { subject: sub, marks: 80, gradePoint: gp, grade };
+        })
+      );
+    } else {
+      setSubjects(generateDefaultSubjectMarks(stuClass, stuGroup));
+    }
   };
 
   const handleSubjectMarkChange = (index: number, newMarks: number) => {
@@ -159,25 +291,22 @@ export const ManageExamResults: React.FC = () => {
 
   const openAddModal = () => {
     const nextNum = 1000 + examResults.length + 1;
+    const initialClass = '১০ম শ্রেণি';
+    const initialGroup = 'বিজ্ঞান';
+    setSelectedStudentId('');
     setForm({
       studentName: '',
       studentId: `DHS-2026-${nextNum}`,
       roll: `${examResults.length + 1}`,
-      studentClass: AVAILABLE_CLASSES[0],
+      studentClass: initialClass,
+      studentGroup: initialGroup,
       section: 'A',
       examTerm: AVAILABLE_EXAM_TERMS[0],
       customTerm: '',
       isCustomTerm: false,
       status: 'PUBLISHED',
     });
-    setSubjects([
-      { subject: 'Bangla (1st & 2nd)', marks: 170, gradePoint: 5.0, grade: 'A+' },
-      { subject: 'English (1st & 2nd)', marks: 160, gradePoint: 5.0, grade: 'A+' },
-      { subject: 'Mathematics', marks: 95, gradePoint: 5.0, grade: 'A+' },
-      { subject: 'Physics', marks: 88, gradePoint: 5.0, grade: 'A+' },
-      { subject: 'Chemistry', marks: 86, gradePoint: 5.0, grade: 'A+' },
-      { subject: 'Biology', marks: 82, gradePoint: 5.0, grade: 'A+' },
-    ]);
+    setSubjects(generateDefaultSubjectMarks(initialClass, initialGroup));
     setShowAddSubjectRow(false);
     setModalOpen(true);
   };
@@ -207,11 +336,16 @@ export const ManageExamResults: React.FC = () => {
     else if (avgGp >= 2.0) overallGrade = 'C';
     else if (avgGp >= 1.0) overallGrade = 'D';
 
+    // Format stored student class with group for 9/10
+    const fullClassString = isClassWithGroups(form.studentClass)
+      ? `${form.studentClass} (${form.studentGroup} বিভাগ)`
+      : form.studentClass;
+
     addExamResult({
       studentName: form.studentName.trim(),
       studentId: form.studentId.trim() || `DHS-2026-${Date.now()}`,
       roll: form.roll.trim(),
-      studentClass: form.studentClass,
+      studentClass: fullClassString,
       section: form.section,
       examTerm: termToUse,
       totalMarks,
@@ -383,19 +517,48 @@ export const ManageExamResults: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2 mb-4">
-              <Bookmark className="w-5 h-5 text-emerald-600" />
-              <h3 className="text-lg font-bold text-gray-900">Add Student Examination Result</h3>
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Bookmark className="w-5 h-5 text-emerald-700" />
+                <h3 className="text-lg font-bold text-gray-900">পরীক্ষার ফলাফল যুক্ত করুন</h3>
+              </div>
+              <span className="text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-semibold">
+                স্বয়ংক্রিয় বিষয় বিন্যাস
+              </span>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              {/* Quick Select Student */}
+              <div className="bg-emerald-50/70 p-3 rounded-2xl border border-emerald-200">
+                <label className="block font-bold text-emerald-950 mb-1 flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>নিবন্ধিত শিক্ষার্থী তালিকা থেকে দ্রুত বাছাই করুন (ঐচ্ছিক)</span>
+                </label>
+                <select
+                  value={selectedStudentId}
+                  onChange={(e) => handleQuickStudentSelect(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-white border border-emerald-300 rounded-xl text-xs font-semibold text-gray-800"
+                >
+                  <option value="">-- শিক্ষার্থী নির্বাচন করুন (অথবা নিচে নতুন তথ্য লিখুন) --</option>
+                  {students.map((stu) => {
+                    const sClass = stu.class || stu.studentClass;
+                    const sGrp = isClassWithGroups(sClass) ? stu.group || 'বিজ্ঞান' : 'সাধারণ';
+                    return (
+                      <option key={stu.id} value={stu.id}>
+                        {stu.name} (রোল: {stu.roll} • {sClass} • শাখা: {stu.section} • বিভাগ: {sGrp})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Student Name *</label>
+                  <label className="block font-bold text-gray-700 mb-1">শিক্ষার্থীর নাম *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Sadia Jahan"
+                    placeholder="যেমন: সাদিয়া জাহান"
                     value={form.studentName}
                     onChange={(e) => setForm({ ...form, studentName: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-hidden focus:border-emerald-600 font-medium"
@@ -403,11 +566,11 @@ export const ManageExamResults: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Student ID *</label>
+                  <label className="block font-bold text-gray-700 mb-1">শিক্ষার্থী আইডি (Student ID) *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. DHS-2026-1001"
+                    placeholder="যেমন: DHS-2026-1001"
                     value={form.studentId}
                     onChange={(e) => setForm({ ...form, studentId: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-hidden focus:border-emerald-600 font-mono"
@@ -415,11 +578,11 @@ export const ManageExamResults: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Class Roll Number *</label>
+                  <label className="block font-bold text-gray-700 mb-1">ক্লাস রোল নম্বর *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. 1"
+                    placeholder="যেমন: ১ বা ১০১"
                     value={form.roll}
                     onChange={(e) => setForm({ ...form, roll: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-hidden focus:border-emerald-600 font-mono"
@@ -428,16 +591,15 @@ export const ManageExamResults: React.FC = () => {
 
                 <div>
                   <label className="block font-bold text-gray-700 mb-1">
-                    Class * <span className="text-emerald-700 font-semibold">(বাধ্যতামূলক শ্রেণি নির্বাচন করুন)</span>
+                    শ্রেণি (Class) * <span className="text-emerald-700 font-semibold">(বাধ্যতামূলক)</span>
                   </label>
                   <select
                     required
                     value={form.studentClass}
-                    onChange={(e) => setForm({ ...form, studentClass: e.target.value })}
+                    onChange={(e) => handleClassChange(e.target.value)}
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-hidden focus:border-emerald-600 font-semibold text-gray-800"
                   >
-                    <option value="" disabled>-- শ্রেণি নির্বাচন করুন --</option>
-                    {AVAILABLE_CLASSES.map((cls, idx) => (
+                    {CLASS_OPTIONS.map((cls, idx) => (
                       <option key={idx} value={cls}>
                         {cls}
                       </option>
@@ -447,7 +609,44 @@ export const ManageExamResults: React.FC = () => {
 
                 <div>
                   <label className="block font-bold text-gray-700 mb-1">
-                    Examination Term * <span className="text-emerald-700 font-semibold">(টার্ম নির্বাচন করুন)</span>
+                    বিভাগ (Group) {isClass910 ? '*' : '(৬ষ্ঠ-৮ম এর জন্য সাধারণ)'}
+                  </label>
+                  {isClass910 ? (
+                    <select
+                      value={form.studentGroup}
+                      onChange={(e) => handleGroupChange(e.target.value)}
+                      className="w-full px-3 py-2 bg-emerald-50/70 border border-emerald-300 rounded-xl focus:outline-hidden focus:border-emerald-600 font-bold text-emerald-900"
+                    >
+                      {GROUP_OPTIONS.map((grp, idx) => (
+                        <option key={idx} value={grp}>
+                          {grp} বিভাগ
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      disabled
+                      value="সাধারণ পাঠ্যক্রম (সকলের জন্য অভিন্ন বিষয়)"
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed font-medium text-xs"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">শাখা (Section)</label>
+                  <input
+                    type="text"
+                    placeholder="যেমন: A বা ক"
+                    value={form.section}
+                    onChange={(e) => setForm({ ...form, section: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-hidden focus:border-emerald-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    পরীক্ষার টার্ম (Examination Term) *
                   </label>
                   <select
                     required
@@ -482,11 +681,11 @@ export const ManageExamResults: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">Status</label>
+                  <label className="block font-bold text-gray-700 mb-1">স্ট্যাটাস (Status)</label>
                   <select
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-hidden focus:border-emerald-600"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-hidden focus:border-emerald-600 font-medium"
                   >
                     <option value="PUBLISHED">PUBLISHED (প্রকাশিত)</option>
                     <option value="DRAFT">DRAFT (খসড়া)</option>
@@ -494,27 +693,72 @@ export const ManageExamResults: React.FC = () => {
                 </div>
               </div>
 
-              {/* Subject Marks Inputs with Add and Delete */}
+              {/* Subject Marks Inputs with Automatic Sync, Add and Delete */}
               <div className="pt-3 border-t border-gray-100 space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-emerald-50/80 p-3 rounded-2xl border border-emerald-200">
                   <div>
-                    <label className="block font-bold text-gray-800 text-xs">
-                      Subject Marks Breakdown ({subjects.length} Subjects)
-                    </label>
-                    <span className="text-[11px] text-gray-400">
-                      যে কোনো বিষয় ডিলিট করতে পারেন অথবা নতুন বিষয় যুক্ত করতে পারেন
+                    <div className="flex items-center gap-1.5 font-bold text-emerald-950 text-xs">
+                      <BookOpen className="w-4 h-4 text-emerald-700" />
+                      <span>
+                        {form.studentClass} {isClass910 ? `(${form.studentGroup} বিভাগ)` : ''} এর নির্ধারিত বিষয় ({subjects.length} টি বিষয়)
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-emerald-700">
+                      শ্রেণি বা বিভাগ পরিবর্তন করলে বিষয় তালিকা স্বয়ংক্রিয়ভাবে আপডেট হয়।
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowAddSubjectRow((prev) => !prev)}
-                    className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    <span>+ নতুন বিষয় যুক্ত করুন</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleReloadDefaultSubjects}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
+                      title="সিলেবাস অনুযায়ী বিষয়গুলো পুনরায় লোড করুন"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>রিলোড</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSubjectRow((prev) => !prev)}
+                      className="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>+ নতুন বিষয়</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Elective / 4th subject selector */}
+                {currentElectives.length > 0 && (
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-200">
+                    <span className="block text-[11px] font-bold text-emerald-950 mb-1.5 flex items-center gap-1">
+                      <Award className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>ঐচ্ছিক বিষয় দ্রুত নির্বাচন (ক্লিক করে অদলবদল করুন):</span>
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {currentElectives.map((ele) => {
+                        const isSelected = subjects.some((s) => s.subject === ele);
+                        return (
+                          <button
+                            key={ele}
+                            type="button"
+                            onClick={() => handleSelectElective(ele)}
+                            className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-emerald-700 text-white shadow-xs'
+                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200'
+                            }`}
+                          >
+                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+                            <span>{ele}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Inline Add Subject Form */}
                 {showAddSubjectRow && (
@@ -592,47 +836,56 @@ export const ManageExamResults: React.FC = () => {
                 )}
 
                 {/* Subject rows with Delete Action */}
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                   {subjects.map((sub, idx) => (
                     <div
                       key={idx}
                       className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100/80 p-2 rounded-xl border border-gray-100 transition group"
                     >
-                      <span className="w-5 text-gray-400 font-mono text-[11px] text-center">{idx + 1}.</span>
-                      
+                      <span className="w-5 text-gray-400 font-mono text-[11px] text-center font-bold">
+                        {idx + 1}.
+                      </span>
+
                       <input
                         type="text"
                         value={sub.subject}
                         onChange={(e) => handleSubjectNameChange(idx, e.target.value)}
-                        className="flex-1 px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-800"
-                        placeholder="Subject name"
+                        className="flex-1 px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-800"
+                        placeholder="বিষয়ের নাম"
                       />
 
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-gray-400">নম্বর:</span>
+                        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-200">
+                          <span className="text-[10px] text-gray-400 font-medium">নম্বর:</span>
                           <input
                             type="number"
                             min={0}
                             max={200}
                             value={sub.marks}
                             onChange={(e) => handleSubjectMarkChange(idx, Number(e.target.value))}
-                            className="w-16 px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-center"
+                            className="w-14 px-1 text-xs font-mono font-bold text-center border-0 outline-hidden"
                             placeholder="Marks"
                           />
                         </div>
 
-                        <span className="w-10 text-center font-bold text-emerald-800 text-xs">
+                        <span
+                          className={`w-10 text-center font-bold text-xs px-1.5 py-0.5 rounded-md ${
+                            sub.grade === 'F'
+                              ? 'bg-rose-100 text-rose-700'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
                           {sub.grade}
                         </span>
-                        <span className="w-12 text-center text-gray-500 font-mono text-[11px]">
-                          {sub.gradePoint.toFixed(1)}
+
+                        <span className="w-12 text-center text-gray-600 font-mono text-[11px] font-bold">
+                          GP: {sub.gradePoint.toFixed(1)}
                         </span>
 
                         <button
                           type="button"
                           onClick={() => removeSubject(idx)}
-                          className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer"
+                          className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                           title="এই বিষয় ডিলিট করুন"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -641,6 +894,57 @@ export const ManageExamResults: React.FC = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* Score Summary Box */}
+                {subjects.length > 0 && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                    <div className="text-gray-600 font-medium">
+                      মোট বিষয়: <span className="font-bold text-gray-900">{subjects.length} টি</span> • মোট নম্বর:{' '}
+                      <span className="font-bold text-gray-900 font-mono">
+                        {subjects.reduce((sum, s) => sum + Number(s.marks || 0), 0)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {(() => {
+                        const hasFailed = subjects.some((s) => s.grade === 'F');
+                        const avgGp = hasFailed
+                          ? 0.0
+                          : Number(
+                              (
+                                subjects.reduce((sum, s) => sum + s.gradePoint, 0) /
+                                subjects.length
+                              ).toFixed(2)
+                            );
+                        let finalGrade = 'F';
+                        if (avgGp >= 5.0) finalGrade = 'A+';
+                        else if (avgGp >= 4.0) finalGrade = 'A';
+                        else if (avgGp >= 3.5) finalGrade = 'A-';
+                        else if (avgGp >= 3.0) finalGrade = 'B';
+                        else if (avgGp >= 2.0) finalGrade = 'C';
+                        else if (avgGp >= 1.0) finalGrade = 'D';
+
+                        return (
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-500">গড় জিপিএ:</span>
+                            <span className="font-bold font-mono text-emerald-800 text-sm">
+                              {avgGp.toFixed(2)}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs font-bold ${
+                                finalGrade === 'F'
+                                  ? 'bg-rose-100 text-rose-700'
+                                  : 'bg-emerald-100 text-emerald-800'
+                              }`}
+                            >
+                              {finalGrade}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-2">

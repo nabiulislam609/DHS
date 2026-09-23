@@ -32,6 +32,7 @@ export interface Student {
   phone: string;
   class?: string;
   group?: string;
+  subjects?: string[];
   guardianPhone?: string;
   image?: string;
 }
