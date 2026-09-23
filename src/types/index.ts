@@ -6,6 +6,7 @@ export interface Teacher {
   email: string;
   phone: string;
   initial: string;
+  image?: string;
   order?: number;
 }
 
@@ -17,6 +18,7 @@ export interface Staff {
   phone: string;
   email?: string;
   initial?: string;
+  image?: string;
   role?: string;
 }
 
@@ -51,6 +53,7 @@ export interface LeadershipMessage {
   credentials: string;
   message: string;
   initial: string;
+  image?: string;
   type: 'principal' | 'president';
 }
 
@@ -131,16 +134,58 @@ export interface ContactMessage {
   read: boolean;
 }
 
+export interface HeroSlide {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  badgeText: string;
+  buttonText: string;
+  buttonLink?: string;
+  active: boolean;
+}
+
+export interface NavigationItem {
+  id: string;
+  label: string;
+  url: string;
+  iconName?: string;
+  order: number;
+  visible: boolean;
+}
+
 export interface SiteSettings {
   schoolNameBangla: string;
   schoolNameEnglish: string;
+  shortName?: string;
+  tagline?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
   motto: string;
   establishedYear: string;
   phone1: string;
   phone2: string;
+  emergencyPhone?: string;
   email: string;
   address: string;
   officeHours: string;
+  googleMapEmbedUrl?: string;
+  facebook?: string;
+  youtube?: string;
+  instagram?: string;
+  linkedin?: string;
+  whatsapp?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  ogImageUrl?: string;
+  copyrightText?: string;
+  aboutIntro?: string;
+  mission?: string;
+  vision?: string;
+  objectives?: string;
+  history?: string;
+  whyUs?: string;
+  facilities?: string;
   totalStudents: string;
   totalTeachers: string;
   passRate: string;
@@ -154,4 +199,27 @@ export interface ActivityLog {
   action: string;
   timestamp: string;
   type: 'notice' | 'admission' | 'message' | 'teacher' | 'event' | 'setting';
+}
+
+export interface SubjectMark {
+  subject: string;
+  marks: number;
+  gradePoint: number;
+  grade: string;
+}
+
+export interface ExamResult {
+  id: string;
+  studentId: string;
+  studentName: string;
+  roll: string;
+  studentClass: string;
+  section: string;
+  examTerm: string;
+  totalMarks: number;
+  gpa: number;
+  grade: string;
+  status: 'PUBLISHED' | 'DRAFT';
+  subjects: SubjectMark[];
+  publishedDate?: string;
 }

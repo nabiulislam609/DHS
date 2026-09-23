@@ -3,11 +3,16 @@ import { useSchool } from '../../context/SchoolContext';
 import { GraduationCap, MapPin, Phone, Mail, Heart, LogIn } from 'lucide-react';
 
 export const Footer: React.FC = () => {
-  const { siteSettings, setViewMode } = useSchool();
+  const { siteSettings, setViewMode, setCurrentFrontendPage } = useSchool();
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const navigateToNotices = () => {
+    setCurrentFrontendPage('notices');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -18,9 +23,17 @@ export const Footer: React.FC = () => {
           {/* Col 1: Brand (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-400 border-2 border-emerald-600 flex items-center justify-center text-emerald-950">
-                <GraduationCap className="w-6 h-6" />
-              </div>
+              {siteSettings.logoUrl ? (
+                <img
+                  src={siteSettings.logoUrl}
+                  alt="Logo"
+                  className="w-11 h-11 rounded-full object-cover border-2 border-amber-400 bg-white"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-amber-400 border-2 border-emerald-600 flex items-center justify-center text-emerald-950">
+                  <GraduationCap className="w-6 h-6" />
+                </div>
+              )}
               <div>
                 <h3 className="text-base font-bold text-white leading-tight">
                   {siteSettings.schoolNameBangla}
@@ -32,13 +45,55 @@ export const Footer: React.FC = () => {
             </div>
 
             <p className="text-xs text-gray-400 leading-relaxed">
-              {siteSettings.motto}
+              {siteSettings.tagline || siteSettings.motto}
             </p>
 
+            {/* Social media links */}
             <div className="flex items-center gap-3 pt-2 text-xs">
-              <span className="w-7 h-7 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center transition cursor-pointer text-white">f</span>
-              <span className="w-7 h-7 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center transition cursor-pointer text-white">yt</span>
-              <span className="w-7 h-7 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center transition cursor-pointer text-white">in</span>
+              {siteSettings.facebook && (
+                <a
+                  href={siteSettings.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center transition cursor-pointer text-white font-bold"
+                  title="Facebook"
+                >
+                  f
+                </a>
+              )}
+              {siteSettings.youtube && (
+                <a
+                  href={siteSettings.youtube}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center transition cursor-pointer text-white font-bold"
+                  title="YouTube"
+                >
+                  yt
+                </a>
+              )}
+              {siteSettings.instagram && (
+                <a
+                  href={siteSettings.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center transition cursor-pointer text-white font-bold"
+                  title="Instagram"
+                >
+                  in
+                </a>
+              )}
+              {siteSettings.whatsapp && (
+                <a
+                  href={siteSettings.whatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center transition cursor-pointer text-white font-bold"
+                  title="WhatsApp"
+                >
+                  wa
+                </a>
+              )}
             </div>
           </div>
 
@@ -52,13 +107,23 @@ export const Footer: React.FC = () => {
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollTo('teachers')} className="hover:text-amber-300 transition cursor-pointer">
+                <button onClick={() => setCurrentFrontendPage('teachers')} className="hover:text-amber-300 transition cursor-pointer">
                   শিক্ষক মণ্ডলী
                 </button>
               </li>
               <li>
+                <button onClick={() => setCurrentFrontendPage('staff')} className="hover:text-amber-300 transition cursor-pointer">
+                  কর্মকর্তা ও কর্মচারী
+                </button>
+              </li>
+              <li>
                 <button onClick={() => scrollTo('notices')} className="hover:text-amber-300 transition cursor-pointer">
-                  নোটিশ
+                  নোটিশ বোর্ড
+                </button>
+              </li>
+              <li>
+                <button onClick={navigateToNotices} className="text-amber-300 font-semibold hover:text-white transition cursor-pointer">
+                  সকল নোটিশ আর্কাইভ
                 </button>
               </li>
               <li>
@@ -83,14 +148,14 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-2 space-y-3">
             <h4 className="text-sm font-bold text-white tracking-wide uppercase">মেনু</h4>
             <ul className="space-y-2 text-xs text-gray-400">
-              <li><button onClick={() => scrollTo('hero')} className="hover:text-amber-300 transition">হোম</button></li>
-              <li><button onClick={() => scrollTo('about')} className="hover:text-amber-300 transition">পরিচিতি</button></li>
-              <li><button onClick={() => scrollTo('teachers')} className="hover:text-amber-300 transition">শিক্ষক</button></li>
-              <li><button onClick={() => scrollTo('notices')} className="hover:text-amber-300 transition">নোটিশ</button></li>
-              <li><button onClick={() => scrollTo('news')} className="hover:text-amber-300 transition">সংবাদ</button></li>
-              <li><button onClick={() => scrollTo('events')} className="hover:text-amber-300 transition">ইভেন্ট</button></li>
-              <li><button onClick={() => scrollTo('programs')} className="hover:text-amber-300 transition">একাডেমিক</button></li>
-              <li><button onClick={() => scrollTo('gallery')} className="hover:text-amber-300 transition">গ্যালারি</button></li>
+              <li><button onClick={() => scrollTo('hero')} className="hover:text-amber-300 transition cursor-pointer">হোম</button></li>
+              <li><button onClick={() => scrollTo('about')} className="hover:text-amber-300 transition cursor-pointer">পরিচিতি</button></li>
+              <li><button onClick={() => scrollTo('teachers')} className="hover:text-amber-300 transition cursor-pointer">শিক্ষক</button></li>
+              <li><button onClick={() => scrollTo('notices')} className="hover:text-amber-300 transition cursor-pointer">নোটিশ</button></li>
+              <li><button onClick={() => scrollTo('news')} className="hover:text-amber-300 transition cursor-pointer">সংবাদ</button></li>
+              <li><button onClick={() => scrollTo('events')} className="hover:text-amber-300 transition cursor-pointer">ইভেন্ট</button></li>
+              <li><button onClick={() => scrollTo('programs')} className="hover:text-amber-300 transition cursor-pointer">একাডেমিক</button></li>
+              <li><button onClick={() => scrollTo('gallery')} className="hover:text-amber-300 transition cursor-pointer">গ্যালারি</button></li>
             </ul>
           </div>
 
@@ -126,7 +191,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Copyright */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-3">
-          <p>© 2025 {siteSettings.schoolNameBangla} ({siteSettings.schoolNameEnglish}). সর্বস্বত্ব সংরক্ষিত।</p>
+          <p>{siteSettings.copyrightText || `© 2025 ${siteSettings.schoolNameBangla} (${siteSettings.schoolNameEnglish})। সর্বস্বত্ব সংরক্ষিত।`}</p>
           <div className="flex items-center gap-1 text-emerald-400">
             <span>সাথে</span>
             <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />

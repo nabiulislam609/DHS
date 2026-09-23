@@ -14,6 +14,9 @@ import {
   ContactMessage,
   SiteSettings,
   ActivityLog,
+  ExamResult,
+  HeroSlide,
+  NavigationItem,
 } from '../types';
 import {
   initialSiteSettings,
@@ -30,6 +33,9 @@ import {
   initialMessages,
   initialAdmissions,
   initialActivities,
+  initialExamResults,
+  initialHeroSlides,
+  initialNavigationItems,
 } from '../data/initialData';
 
 export type ViewMode = 'frontend' | 'backend';
@@ -52,6 +58,7 @@ export type AdminTab =
   | 'programs'
   | 'statistics'
   | 'performance'
+  | 'results'
   | 'admissions'
   | 'messages';
 
@@ -63,6 +70,8 @@ interface SchoolContextType {
   setAdminTab: (tab: AdminTab) => void;
   isAdmissionModalOpen: boolean;
   setIsAdmissionModalOpen: (open: boolean) => void;
+  currentFrontendPage: 'home' | 'results' | 'notices' | 'teachers' | 'staff';
+  setCurrentFrontendPage: (page: 'home' | 'results' | 'notices' | 'teachers' | 'staff') => void;
 
   // Data states
   siteSettings: SiteSettings;
@@ -91,6 +100,21 @@ interface SchoolContextType {
 
   leadership: LeadershipMessage[];
   updateLeadership: (id: string, updated: Partial<LeadershipMessage>) => void;
+
+  heroSlides: HeroSlide[];
+  addHeroSlide: (slide: Omit<HeroSlide, 'id'>) => void;
+  updateHeroSlide: (id: string, slide: Partial<HeroSlide>) => void;
+  deleteHeroSlide: (id: string) => void;
+  toggleHeroSlideActive: (id: string) => void;
+
+  navigationItems: NavigationItem[];
+  addNavigationItem: (item: Omit<NavigationItem, 'id'>) => void;
+  updateNavigationItem: (id: string, item: Partial<NavigationItem>) => void;
+  deleteNavigationItem: (id: string) => void;
+  toggleNavigationItemVisible: (id: string) => void;
+  moveNavigationItem: (id: string, direction: 'up' | 'down') => void;
+  reorderNavigationItems: (items: NavigationItem[]) => void;
+  resetNavigationItems: () => void;
 
   academicPrograms: AcademicProgram[];
   addProgram: (program: Omit<AcademicProgram, 'id'>) => void;
@@ -123,6 +147,11 @@ interface SchoolContextType {
   updateAdmissionStatus: (id: string, status: AdmissionApplication['status']) => void;
   deleteAdmission: (id: string) => void;
 
+  examResults: ExamResult[];
+  addExamResult: (result: Omit<ExamResult, 'id'>) => void;
+  updateExamResult: (id: string, result: Partial<ExamResult>) => void;
+  deleteExamResult: (id: string) => void;
+
   messages: ContactMessage[];
   submitContactMessage: (msg: Omit<ContactMessage, 'id' | 'date' | 'read'>) => void;
   markMessageRead: (id: string, read: boolean) => void;
@@ -143,6 +172,65 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [viewMode, setViewMode] = useState<ViewMode>('frontend');
   const [adminTab, setAdminTab] = useState<AdminTab>('dashboard');
   const [isAdmissionModalOpen, setIsAdmissionModalOpen] = useState(false);
+
+  const [currentFrontendPage, setCurrentFrontendPageState] = useState<'home' | 'results' | 'notices' | 'teachers' | 'staff'>(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.search.includes('page=results') || window.location.hash === '#results-page') {
+        return 'results';
+      }
+      if (window.location.search.includes('page=notices') || window.location.hash === '#notices-page') {
+        return 'notices';
+      }
+      if (window.location.search.includes('page=teachers') || window.location.hash === '#teachers-page') {
+        return 'teachers';
+      }
+      if (window.location.search.includes('page=staff') || window.location.hash === '#staff-page') {
+        return 'staff';
+      }
+      return 'home';
+    }
+    return 'home';
+  });
+
+  const setCurrentFrontendPage = (page: 'home' | 'results' | 'notices' | 'teachers' | 'staff') => {
+    setCurrentFrontendPageState(page);
+    if (typeof window !== 'undefined') {
+      if (page === 'results') {
+        window.history.pushState({}, '', '?page=results');
+      } else if (page === 'notices') {
+        window.history.pushState({}, '', '?page=notices');
+      } else if (page === 'teachers') {
+        window.history.pushState({}, '', '?page=teachers');
+      } else if (page === 'staff') {
+        window.history.pushState({}, '', '?page=staff');
+      } else {
+        window.history.pushState({}, '', window.location.pathname || '/');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.search.includes('page=results') || window.location.hash === '#results-page') {
+        setCurrentFrontendPageState('results');
+      } else if (window.location.search.includes('page=notices') || window.location.hash === '#notices-page') {
+        setCurrentFrontendPageState('notices');
+      } else if (window.location.search.includes('page=teachers') || window.location.hash === '#teachers-page') {
+        setCurrentFrontendPageState('teachers');
+      } else if (window.location.search.includes('page=staff') || window.location.hash === '#staff-page') {
+        setCurrentFrontendPageState('staff');
+      } else {
+        setCurrentFrontendPageState('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
+  }, []);
 
   // Load from localStorage or fallback to initial
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
@@ -215,7 +303,75 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return saved ? JSON.parse(saved) : initialActivities;
   });
 
+  const [examResults, setExamResults] = useState<ExamResult[]>(() => {
+    const saved = localStorage.getItem('dhs_exam_results');
+    return saved ? JSON.parse(saved) : initialExamResults;
+  });
+
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => {
+    const saved = localStorage.getItem('dhs_hero_slides');
+    return saved ? JSON.parse(saved) : initialHeroSlides;
+  });
+
+  const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(() => {
+    const saved = localStorage.getItem('dhs_navigation_items');
+    if (saved) {
+      try {
+        const parsed: NavigationItem[] = JSON.parse(saved);
+        // Exclude standalone শিক্ষক and কর্মকর্তা ও কর্মচারী since they belong inside the 'পরিচিতি' submenu
+        let filtered = parsed.filter(
+          (item) =>
+            item.url !== '#teachers' &&
+            item.url !== '#staff' &&
+            item.label !== 'শিক্ষক' &&
+            !item.label.includes('কর্মচারী')
+        );
+
+        // Ensure ফলাফল is placed right after নোটিশ
+        const resultsIdx = filtered.findIndex((item) => item.label === 'ফলাফল' || item.url === '/results' || item.url === '#results');
+        let resultsItem: NavigationItem;
+        if (resultsIdx !== -1) {
+          resultsItem = filtered[resultsIdx];
+          filtered.splice(resultsIdx, 1);
+        } else {
+          resultsItem = {
+            id: 'nav-results',
+            label: 'ফলাফল',
+            url: '/results',
+            iconName: '—',
+            order: 3,
+            visible: true,
+          };
+        }
+
+        const noticeIdx = filtered.findIndex((item) => item.label === 'নোটিশ' || item.url === '#notices');
+        if (noticeIdx !== -1) {
+          filtered.splice(noticeIdx + 1, 0, resultsItem);
+        } else {
+          filtered.push(resultsItem);
+        }
+
+        return filtered.map((item, idx) => ({ ...item, order: idx }));
+      } catch (e) {
+        return initialNavigationItems;
+      }
+    }
+    return initialNavigationItems;
+  });
+
   // Sync with LocalStorage
+  useEffect(() => {
+    localStorage.setItem('dhs_hero_slides', JSON.stringify(heroSlides));
+  }, [heroSlides]);
+
+  useEffect(() => {
+    localStorage.setItem('dhs_navigation_items', JSON.stringify(navigationItems));
+  }, [navigationItems]);
+
+  useEffect(() => {
+    localStorage.setItem('dhs_exam_results', JSON.stringify(examResults));
+  }, [examResults]);
+
   useEffect(() => {
     localStorage.setItem('dhs_site_settings', JSON.stringify(siteSettings));
   }, [siteSettings]);
@@ -376,6 +532,81 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     logActivity('নেতৃত্বের বার্তা হালনাগাদ করা হয়েছে', 'setting');
   };
 
+  // Hero Slides
+  const addHeroSlide = (slide: Omit<HeroSlide, 'id'>) => {
+    const id = 'slide-' + Date.now();
+    setHeroSlides((prev) => [...prev, { id, ...slide }]);
+    logActivity(`নতুন হিরো স্লাইড "${slide.title}" যোগ করা হয়েছে`, 'setting');
+  };
+
+  const updateHeroSlide = (id: string, slide: Partial<HeroSlide>) => {
+    setHeroSlides((prev) => prev.map((s) => (s.id === id ? { ...s, ...slide } : s)));
+    logActivity('হিরো স্লাইড আপডেট করা হয়েছে', 'setting');
+  };
+
+  const deleteHeroSlide = (id: string) => {
+    setHeroSlides((prev) => prev.filter((s) => s.id !== id));
+    logActivity('হিরো স্লাইড মুছে ফেলা হয়েছে', 'setting');
+  };
+
+  const toggleHeroSlideActive = (id: string) => {
+    setHeroSlides((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s))
+    );
+  };
+
+  // Navigation Items
+  const addNavigationItem = (item: Omit<NavigationItem, 'id'>) => {
+    const id = 'nav-' + Date.now();
+    setNavigationItems((prev) => [...prev, { id, ...item }]);
+    logActivity(`নতুন মেনু আইটেম "${item.label}" যুক্ত করা হয়েছে`, 'setting');
+  };
+
+  const updateNavigationItem = (id: string, item: Partial<NavigationItem>) => {
+    setNavigationItems((prev) => prev.map((n) => (n.id === id ? { ...n, ...item } : n)));
+    logActivity('নেভিগেশন মেনু আইটেম আপডেট করা হয়েছে', 'setting');
+  };
+
+  const deleteNavigationItem = (id: string) => {
+    setNavigationItems((prev) => prev.filter((n) => n.id !== id));
+    logActivity('নেভিগেশন মেনু আইটেম মুছে ফেলা হয়েছে', 'setting');
+  };
+
+  const toggleNavigationItemVisible = (id: string) => {
+    setNavigationItems((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, visible: !n.visible } : n))
+    );
+  };
+
+  const moveNavigationItem = (id: string, direction: 'up' | 'down') => {
+    setNavigationItems((prev) => {
+      const sorted = [...prev].sort((a, b) => a.order - b.order);
+      const index = sorted.findIndex((item) => item.id === id);
+      if (index === -1) return prev;
+      if (direction === 'up' && index === 0) return prev;
+      if (direction === 'down' && index === sorted.length - 1) return prev;
+
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      const temp = sorted[index];
+      sorted[index] = sorted[targetIndex];
+      sorted[targetIndex] = temp;
+
+      return sorted.map((item, idx) => ({ ...item, order: idx }));
+    });
+    logActivity('নেভিগেশন মেনুর ক্রম পরিবর্তন করা হয়েছে', 'setting');
+  };
+
+  const reorderNavigationItems = (items: NavigationItem[]) => {
+    const updated = items.map((item, idx) => ({ ...item, order: idx }));
+    setNavigationItems(updated);
+    logActivity('নেভিগেশন মেনুর সামগ্রিক বিন্যাস আপডেট করা হয়েছে', 'setting');
+  };
+
+  const resetNavigationItems = () => {
+    setNavigationItems(initialNavigationItems);
+    logActivity('নেভিগেশন মেনু ডিফল্ট বিন্যাসে রিসেট করা হয়েছে', 'setting');
+  };
+
   // Academic Programs
   const addProgram = (item: Omit<AcademicProgram, 'id'>) => {
     const id = 'prog-' + Date.now();
@@ -502,6 +733,28 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     logActivity(`ভর্তি আবেদন তালিকা থেকে সরানো হয়েছে`, 'admission');
   };
 
+  // Exam Results
+  const addExamResult = (result: Omit<ExamResult, 'id'>) => {
+    const newResult: ExamResult = {
+      ...result,
+      id: 'res-' + Date.now(),
+    };
+    setExamResults((prev) => [newResult, ...prev]);
+    logActivity(`নতুন পরীক্ষার ফলাফল যুক্ত করা হয়েছে: ${newResult.studentName}`, 'setting');
+  };
+
+  const updateExamResult = (id: string, updated: Partial<ExamResult>) => {
+    setExamResults((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...updated } : r))
+    );
+    logActivity(`পরীক্ষার ফলাফল আপডেট করা হয়েছে`, 'setting');
+  };
+
+  const deleteExamResult = (id: string) => {
+    setExamResults((prev) => prev.filter((r) => r.id !== id));
+    logActivity(`পরীক্ষার ফলাফল মুছে ফেলা হয়েছে`, 'setting');
+  };
+
   // Messages
   const submitContactMessage = (msg: Omit<ContactMessage, 'id' | 'date' | 'read'>) => {
     const id = 'msg-' + Date.now();
@@ -541,6 +794,8 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setAdminTab,
         isAdmissionModalOpen,
         setIsAdmissionModalOpen,
+        currentFrontendPage,
+        setCurrentFrontendPage,
         siteSettings,
         updateSiteSettings,
         teachers,
@@ -562,6 +817,19 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         togglePinNotice,
         leadership,
         updateLeadership,
+        heroSlides,
+        addHeroSlide,
+        updateHeroSlide,
+        deleteHeroSlide,
+        toggleHeroSlideActive,
+        navigationItems,
+        addNavigationItem,
+        updateNavigationItem,
+        deleteNavigationItem,
+        toggleNavigationItemVisible,
+        moveNavigationItem,
+        reorderNavigationItems,
+        resetNavigationItems,
         academicPrograms,
         addProgram,
         updateProgram,
@@ -587,6 +855,10 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         submitAdmission,
         updateAdmissionStatus,
         deleteAdmission,
+        examResults,
+        addExamResult,
+        updateExamResult,
+        deleteExamResult,
         messages,
         submitContactMessage,
         markMessageRead,

@@ -4,7 +4,7 @@ import { Pin, Calendar, Tag, ArrowRight, Eye, X } from 'lucide-react';
 import { Notice } from '../../types';
 
 export const NoticeBoard: React.FC = () => {
-  const { notices } = useSchool();
+  const { notices, setCurrentFrontendPage } = useSchool();
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
 
   const pinnedNotice = notices.find((n) => n.pinned) || notices[0];
@@ -166,11 +166,14 @@ export const NoticeBoard: React.FC = () => {
             {/* Bottom View All Button */}
             <div className="text-center pt-4 mt-2 border-t border-gray-100">
               <button
-                onClick={() => setSelectedNotice(notices[0])}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
+                onClick={() => {
+                  setCurrentFrontendPage('notices');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="inline-flex items-center justify-center gap-2 py-2.5 px-6 rounded-xl border border-emerald-600/30 hover:border-emerald-600 bg-emerald-50/50 hover:bg-emerald-100 text-xs font-bold text-emerald-800 transition cursor-pointer shadow-2xs group"
               >
                 <span>সব নোটিশ দেখুন</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 text-emerald-700 group-hover:translate-x-1 transition" />
               </button>
             </div>
           </div>

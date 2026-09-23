@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export const QuickActions: React.FC = () => {
-  const { setIsAdmissionModalOpen } = useSchool();
+  const { setIsAdmissionModalOpen, setCurrentFrontendPage } = useSchool();
 
   const actions = [
     {
@@ -49,13 +49,13 @@ export const QuickActions: React.FC = () => {
       label: 'ফলাফল',
       icon: Award,
       color: 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200',
-      action: () => document.getElementById('stats')?.scrollIntoView({ behavior: 'smooth' }),
+      action: () => setCurrentFrontendPage('results'),
     },
     {
       label: 'শিক্ষক',
       icon: Users,
       color: 'bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200',
-      action: () => document.getElementById('teachers')?.scrollIntoView({ behavior: 'smooth' }),
+      action: () => setCurrentFrontendPage('teachers'),
     },
     {
       label: 'যোগাযোগ',
@@ -66,8 +66,8 @@ export const QuickActions: React.FC = () => {
   ];
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-8 -mt-6 sm:-mt-8 relative z-20">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 grid grid-cols-4 sm:grid-cols-8 gap-3 sm:gap-4">
+    <section className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 relative z-10">
+      <div className="bg-white rounded-2xl shadow-sm hover:shadow-md border border-gray-100 p-4 sm:p-6 grid grid-cols-4 sm:grid-cols-8 gap-3 sm:gap-4 transition-all">
         {actions.map((item, idx) => {
           const Icon = item.icon;
           return (

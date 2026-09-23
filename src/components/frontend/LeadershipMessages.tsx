@@ -39,9 +39,17 @@ export const LeadershipMessages: React.FC = () => {
 
             {/* Author Info */}
             <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 font-bold text-lg flex items-center justify-center border border-emerald-200">
-                {item.initial}
-              </div>
+              {item.image ? (
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-emerald-600 shadow-2xs shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 font-bold text-lg flex items-center justify-center border border-emerald-200 shrink-0">
+                  {item.initial || item.name.charAt(0)}
+                </div>
+              )}
               <div>
                 <h4 className="text-base font-bold text-gray-900">{item.name}</h4>
                 <p className="text-xs font-semibold text-emerald-700">{item.role}</p>

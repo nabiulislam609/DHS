@@ -25,6 +25,7 @@ import {
   Eye,
   LogOut,
   ChevronRight,
+  Bookmark,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -40,7 +41,15 @@ interface MenuSection {
 }
 
 export const AdminSidebar: React.FC = () => {
-  const { viewMode, setViewMode, adminTab, setAdminTab, unreadMessageCount, admissions } = useSchool();
+  const {
+    viewMode,
+    setViewMode,
+    adminTab,
+    setAdminTab,
+    unreadMessageCount,
+    admissions,
+    siteSettings,
+  } = useSchool();
 
   const menuSections: MenuSection[] = [
     {
@@ -55,7 +64,7 @@ export const AdminSidebar: React.FC = () => {
       group: 'ওয়েবসাইট',
       items: [
         { id: 'hero' as AdminTab, label: 'হিরো স্লাইড', icon: Sliders },
-        { id: 'navigation' as AdminTab, label: 'নেভিগেশন', icon: Navigation },
+        { id: 'navigation' as AdminTab, label: 'নেভিগেশন মেনু', icon: Navigation },
         { id: 'static' as AdminTab, label: 'স্ট্যাটিক পেজ', icon: FileCode },
       ],
     },
@@ -63,7 +72,7 @@ export const AdminSidebar: React.FC = () => {
       group: 'মানুষ',
       items: [
         { id: 'teachers' as AdminTab, label: 'শিক্ষক', icon: GraduationCap },
-        { id: 'staff' as AdminTab, label: 'কর্মচারী', icon: Briefcase },
+        { id: 'staff' as AdminTab, label: 'কর্মকর্তা ও কর্মচারী', icon: Briefcase },
         { id: 'students' as AdminTab, label: 'শিক্ষার্থী', icon: Users },
         { id: 'leadership' as AdminTab, label: 'নেতৃত্ব', icon: User },
       ],
@@ -81,6 +90,7 @@ export const AdminSidebar: React.FC = () => {
     {
       group: 'একাডেমিক',
       items: [
+        { id: 'results' as AdminTab, label: 'Exam Results Sheet', icon: Bookmark },
         { id: 'programs' as AdminTab, label: 'প্রোগ্রাম', icon: BookOpen },
         { id: 'statistics' as AdminTab, label: 'পরিসংখ্যান', icon: BarChart3 },
         { id: 'performance' as AdminTab, label: 'পারফরম্যান্স', icon: Award },
@@ -110,12 +120,20 @@ export const AdminSidebar: React.FC = () => {
       {/* Top Section: Brand Header */}
       <div>
         <div className="p-4 border-b border-[#0d3124] flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-amber-400 border-2 border-emerald-950 flex items-center justify-center text-emerald-950 shrink-0">
-            <GraduationCap className="w-6 h-6" />
-          </div>
+          {siteSettings.logoUrl ? (
+            <img
+              src={siteSettings.logoUrl}
+              alt="Logo"
+              className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 shrink-0 bg-white"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-amber-400 border-2 border-emerald-950 flex items-center justify-center text-emerald-950 shrink-0">
+              <GraduationCap className="w-6 h-6" />
+            </div>
+          )}
           <div className="overflow-hidden">
             <h2 className="text-sm font-bold text-white tracking-wide truncate">
-              Dadra HS
+              {siteSettings.shortName || siteSettings.schoolNameBangla || 'Dadra HS'}
             </h2>
             <p className="text-[11px] text-emerald-400 font-medium tracking-wide">
               Admin Panel
@@ -163,6 +181,16 @@ export const AdminSidebar: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Live CMS Synchronization card matching Image 2 */}
+      <div className="px-3 py-2">
+        <div className="bg-[#0b3323] border border-emerald-500/30 rounded-2xl p-3 text-[11px] text-emerald-100/90 space-y-1">
+          <span className="font-bold text-emerald-300 block text-xs">Live CMS Synchronization</span>
+          <p className="text-[10px] leading-relaxed text-emerald-200/70">
+            All changes to notices, admissions, and exam marks immediately update and reflect on the public portal without redeployment.
+          </p>
         </div>
       </div>
 

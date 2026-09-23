@@ -21,10 +21,10 @@ export const NoticeTicker: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-emerald-900/90 border-b border-emerald-800 text-white py-2 px-4 overflow-hidden">
+    <div className="w-full bg-[#053527] border-b border-[#042b1f] text-white py-2.5 px-4 overflow-hidden relative z-20 shadow-xs">
       <div className="max-w-7xl mx-auto flex items-center gap-3">
         {/* Ticker Title Badge */}
-        <div className="flex items-center gap-1.5 bg-emerald-800 text-amber-300 px-3 py-1 rounded-full text-xs font-bold shrink-0 shadow-xs">
+        <div className="flex items-center gap-1.5 bg-[#0f4d3a] text-amber-300 border border-[#1b6a52] px-3.5 py-1 rounded-full text-xs font-bold shrink-0 shadow-xs">
           <Bell className="w-3.5 h-3.5 animate-bounce text-amber-300" />
           <span>সর্বশেষ নোটিশ:</span>
         </div>
@@ -32,11 +32,11 @@ export const NoticeTicker: React.FC = () => {
         {/* Marquee Content */}
         <div className="overflow-hidden relative w-full whitespace-nowrap">
           <div className="inline-flex items-center gap-6 animate-marquee">
-            {notices.map((notice) => (
+            {[...notices, ...notices].map((notice, idx) => (
               <a
-                key={notice.id}
+                key={`${notice.id}-${idx}`}
                 href="#notices"
-                className="inline-flex items-center gap-2 hover:text-amber-300 transition text-xs sm:text-sm font-medium"
+                className="inline-flex items-center gap-2 hover:text-amber-300 transition text-xs sm:text-sm font-medium shrink-0"
               >
                 <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${getBadgeColor(notice.category)}`}>
                   {notice.category}

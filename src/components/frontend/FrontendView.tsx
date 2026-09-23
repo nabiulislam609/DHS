@@ -5,7 +5,6 @@ import { NoticeTicker } from './NoticeTicker';
 import { QuickActions } from './QuickActions';
 import { NoticeBoard } from './NoticeBoard';
 import { LeadershipMessages } from './LeadershipMessages';
-import { TeachersSection } from './TeachersSection';
 import { AboutSection } from './AboutSection';
 import { AcademicPrograms } from './AcademicPrograms';
 import { SchoolStats } from './SchoolStats';
@@ -22,12 +21,11 @@ export const FrontendView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#fafaf9] text-gray-800 flex flex-col antialiased selection:bg-emerald-200 selection:text-emerald-900">
       <Header />
-      <HeroSlider />
       <NoticeTicker />
+      <HeroSlider />
       <QuickActions />
       <NoticeBoard />
       <LeadershipMessages />
-      <TeachersSection />
       <AboutSection />
       <AcademicPrograms />
       <SchoolStats />

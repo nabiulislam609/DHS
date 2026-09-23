@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSchool } from '../../context/SchoolContext';
-import { Plus, Trash2, X, Image as ImageIcon } from 'lucide-react';
-import { GalleryAlbum } from '../../types';
+import { Plus, Trash2, X, Image as ImageIcon, Upload } from 'lucide-react';
+import { compressImageFile } from '../../utils/imageUpload';
 
 export const ManageGallery: React.FC = () => {
   const { galleryAlbums, addGalleryAlbum, deleteGalleryAlbum, addImageToAlbum } = useSchool();
   const [albumModalOpen, setAlbumModalOpen] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+
+  const albumFileRef = useRef<HTMLInputElement | null>(null);
+  const photoFileRef = useRef<HTMLInputElement | null>(null);
 
   const [albumForm, setAlbumForm] = useState({
     title: '',
@@ -17,6 +21,36 @@ export const ManageGallery: React.FC = () => {
   });
 
   const [newPhotoUrl, setNewPhotoUrl] = useState('');
+
+  const handleAlbumFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploading(true);
+      const base64 = await compressImageFile(file, 1000, 700, 0.82);
+      setAlbumForm((prev) => ({ ...prev, imageUrl: base64 }));
+    } catch (err: any) {
+      alert(err.message || 'ছবি আপলোড করতে ব্যর্থ হয়েছে');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploading(true);
+      const base64 = await compressImageFile(file, 1000, 700, 0.82);
+      setNewPhotoUrl(base64);
+    } catch (err: any) {
+      alert(err.message || 'ছবি আপলোড করতে ব্যর্থ হয়েছে');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
 
   const handleCreateAlbum = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +84,15 @@ export const ManageGallery: React.FC = () => {
           <p className="text-xs text-gray-500">বিদ্যালয়ের সকল ফটো অ্যালবাম ও ছবি ব্যবস্থাপনা</p>
         </div>
         <button
-          onClick={() => setAlbumModalOpen(true)}
+          onClick={() => {
+            setAlbumForm({
+              title: '',
+              category: 'campus',
+              imageUrl: '',
+              itemCountText: '১ টি ছবি',
+            });
+            setAlbumModalOpen(true);
+          }}
           className="inline-flex items-center gap-2 bg-[#15803d] hover:bg-[#166534] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -58,53 +100,63 @@ export const ManageGallery: React.FC = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {galleryAlbums.map((alb) => (
-          <div key={alb.id} className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden flex flex-col justify-between group">
-            <div className="h-44 relative overflow-hidden">
-              <img src={alb.imageUrl} alt={alb.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
-              <div className="absolute top-2 right-2 bg-black/60 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-                {alb.images?.length || 1} টি ছবি
-              </div>
-            </div>
-
-            <div className="p-4 flex-1 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                  {alb.category}
-                </span>
-                <h4 className="font-bold text-sm text-gray-900 mt-1">{alb.title}</h4>
-              </div>
-
-              <div className="pt-3 border-t border-gray-100 flex items-center justify-between mt-3">
+      {/* Album Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {galleryAlbums.map((album) => (
+          <div
+            key={album.id}
+            className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-xs group"
+          >
+            <div className="relative h-48 bg-gray-100 overflow-hidden">
+              <img
+                src={album.imageUrl}
+                alt={album.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+              />
+              <div className="absolute top-2 right-2 flex items-center gap-1.5">
                 <button
                   onClick={() => {
-                    setSelectedAlbumId(alb.id);
+                    if (confirm(`আপনি কি "${album.title}" অ্যালবামটি মুছে ফেলতে চান?`)) {
+                      deleteGalleryAlbum(album.id);
+                    }
+                  }}
+                  className="bg-black/60 hover:bg-rose-600 text-white p-1.5 rounded-lg backdrop-blur-xs transition cursor-pointer"
+                  title="অ্যালবাম মুছুন"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              <span className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[11px] px-2 py-0.5 rounded uppercase font-semibold">
+                {album.category}
+              </span>
+            </div>
+
+            <div className="p-4">
+              <h3 className="font-bold text-gray-900 text-sm">{album.title}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {album.images ? `${album.images.length} টি ছবি` : album.itemCountText}
+              </p>
+
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    setSelectedAlbumId(album.id);
+                    setNewPhotoUrl('');
                     setPhotoModalOpen(true);
                   }}
-                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-900 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>ছবি যোগ করুন</span>
                 </button>
-
-                <button
-                  onClick={() => {
-                    if (confirm(`আপনি কি "${alb.title}" অ্যালবামটি মুছে ফেলতে চান?`)) {
-                      deleteGalleryAlbum(alb.id);
-                    }
-                  }}
-                  className="p-1 rounded text-rose-500 hover:bg-rose-50 transition cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <span className="text-[11px] text-gray-400">ID: {album.id}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Create Album Modal */}
+      {/* Add Album Modal */}
       {albumModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-gray-100">
@@ -117,13 +169,13 @@ export const ManageGallery: React.FC = () => {
 
             <h3 className="text-lg font-bold text-gray-900 mb-4">নতুন অ্যালবাম তৈরি করুন</h3>
 
-            <form onSubmit={handleCreateAlbum} className="space-y-3 text-xs">
+            <form onSubmit={handleCreateAlbum} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-gray-700 mb-1">অ্যালবামের নাম *</label>
+                <label className="block font-bold text-gray-700 mb-1">অ্যালবামের শিরোনাম *</label>
                 <input
                   type="text"
                   required
-                  placeholder="যেমন: বার্ষিক পুরস্কার বিতরণী"
+                  placeholder="যেমন: বার্ষিক ক্রীড়া প্রতিযোগিতা ২০২৫"
                   value={albumForm.title}
                   onChange={(e) => setAlbumForm({ ...albumForm, title: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-hidden focus:border-emerald-600"
@@ -145,14 +197,47 @@ export const ManageGallery: React.FC = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block font-bold text-gray-700 mb-1">কভার ছবির URL</label>
+              {/* Photo Upload for Album Cover */}
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-gray-700 flex items-center gap-1">
+                    <ImageIcon className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>কভার ছবি</span>
+                  </label>
+                  <input
+                    type="file"
+                    ref={albumFileRef}
+                    accept="image/*"
+                    onChange={handleAlbumFile}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => albumFileRef.current?.click()}
+                    disabled={uploading}
+                    className="inline-flex items-center gap-1 bg-[#15803d] text-white px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer"
+                  >
+                    <Upload className="w-3 h-3" />
+                    <span>ডিভাইস থেকে ফটো নির্বাচন</span>
+                  </button>
+                </div>
+
+                {albumForm.imageUrl && (
+                  <div className="relative h-28 rounded-lg overflow-hidden border border-gray-200">
+                    <img
+                      src={albumForm.imageUrl}
+                      alt="Cover"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
                 <input
-                  type="url"
-                  placeholder="https://images.unsplash.com/..."
+                  type="text"
+                  placeholder="বা সরাসরি ছবির URL দিন"
                   value={albumForm.imageUrl}
                   onChange={(e) => setAlbumForm({ ...albumForm, imageUrl: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-hidden focus:border-emerald-600"
+                  className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-emerald-600"
                 />
               </div>
 
@@ -190,15 +275,43 @@ export const ManageGallery: React.FC = () => {
             <h3 className="text-base font-bold text-gray-900 mb-3">অ্যালবামে নতুন ছবি যোগ করুন</h3>
 
             <form onSubmit={handleAddPhoto} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-gray-700 mb-1">ছবির লিঙ্ক (Image URL) *</label>
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-gray-700">ছবি নির্বাচন</label>
+                  <input
+                    type="file"
+                    ref={photoFileRef}
+                    accept="image/*"
+                    onChange={handlePhotoFile}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => photoFileRef.current?.click()}
+                    disabled={uploading}
+                    className="inline-flex items-center gap-1 bg-[#15803d] text-white px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer"
+                  >
+                    <Upload className="w-3 h-3" />
+                    <span>ডিভাইস থেকে আপলোড</span>
+                  </button>
+                </div>
+
+                {newPhotoUrl && (
+                  <div className="relative h-28 rounded-lg overflow-hidden border border-gray-200">
+                    <img
+                      src={newPhotoUrl}
+                      alt="Uploaded"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
                 <input
-                  type="url"
-                  required
-                  placeholder="https://images.unsplash.com/..."
+                  type="text"
+                  placeholder="বা ছবির URL দিন"
                   value={newPhotoUrl}
                   onChange={(e) => setNewPhotoUrl(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-hidden focus:border-emerald-600"
+                  className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-emerald-600"
                 />
               </div>
 

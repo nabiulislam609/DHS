@@ -12,6 +12,9 @@ import { ManageGallery } from './ManageGallery';
 import { ManageSiteSettings } from './ManageSiteSettings';
 import { ManageStudents } from './ManageStudents';
 import { ManageLeadership } from './ManageLeadership';
+import { ManageExamResults } from './ManageExamResults';
+import { ManageHeroSlides } from './ManageHeroSlides';
+import { ManageNavigation } from './ManageNavigation';
 import { GenericSectionManager } from './GenericSectionManager';
 import { Eye, Bell, ShieldCheck } from 'lucide-react';
 
@@ -22,6 +25,8 @@ export const AdminPanel: React.FC = () => {
     switch (adminTab) {
       case 'dashboard':
         return <AdminDashboard />;
+      case 'results':
+        return <ManageExamResults />;
       case 'teachers':
         return <ManageTeachers />;
       case 'notices':
@@ -38,6 +43,10 @@ export const AdminPanel: React.FC = () => {
         return <ManageGallery />;
       case 'settings':
         return <ManageSiteSettings />;
+      case 'hero':
+        return <ManageHeroSlides />;
+      case 'navigation':
+        return <ManageNavigation />;
       case 'students':
         return <ManageStudents />;
       case 'leadership':

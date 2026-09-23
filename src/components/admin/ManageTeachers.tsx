@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSchool } from '../../context/SchoolContext';
-import { Plus, Edit2, Trash2, X, GraduationCap, Mail, Phone, BookOpen } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { Teacher } from '../../types';
+import { compressImageFile } from '../../utils/imageUpload';
 
 export const ManageTeachers: React.FC = () => {
   const { teachers, addTeacher, updateTeacher, deleteTeacher } = useSchool();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -15,10 +18,12 @@ export const ManageTeachers: React.FC = () => {
     email: '',
     phone: '',
     initial: '',
+    image: '' as string | undefined,
   });
 
   const openAddModal = () => {
     setEditingTeacher(null);
+    setUploadError(null);
     setForm({
       name: '',
       designation: 'সহকারী শিক্ষক',
@@ -26,12 +31,14 @@ export const ManageTeachers: React.FC = () => {
       email: '',
       phone: '',
       initial: '',
+      image: undefined,
     });
     setModalOpen(true);
   };
 
   const openEditModal = (t: Teacher) => {
     setEditingTeacher(t);
+    setUploadError(null);
     setForm({
       name: t.name,
       designation: t.designation,
@@ -39,8 +46,28 @@ export const ManageTeachers: React.FC = () => {
       email: t.email,
       phone: t.phone,
       initial: t.initial || t.name.charAt(0),
+      image: t.image,
     });
     setModalOpen(true);
+  };
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadError(null);
+      const dataUrl = await compressImageFile(file, 500, 500, 0.85);
+      setForm((prev) => ({ ...prev, image: dataUrl }));
+    } catch (err: any) {
+      setUploadError(err.message || 'ছবি আপলোড করতে ব্যর্থ হয়েছে');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setForm((prev) => ({ ...prev, image: undefined }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -70,7 +97,9 @@ export const ManageTeachers: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">শিক্ষক ব্যবস্থাপনা</h1>
-          <p className="text-xs text-gray-500">বিদ্যালয়ের সকল শিক্ষকের তালিকা ও তথ্য নিয়ন্ত্রণ</p>
+          <p className="text-xs text-gray-500">
+            বিদ্যালয়ের সকল শিক্ষকের ছবি, তালিকা ও তথ্য নিয়ন্ত্রণ
+          </p>
         </div>
         <button
           onClick={openAddModal}
@@ -99,9 +128,17 @@ export const ManageTeachers: React.FC = () => {
                 <tr key={t.id} className="hover:bg-gray-50/60 transition">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-800 font-bold flex items-center justify-center shrink-0">
-                        {t.initial || t.name.charAt(0)}
-                      </div>
+                      {t.image ? (
+                        <img
+                          src={t.image}
+                          alt={t.name}
+                          className="w-10 h-10 rounded-full object-cover border border-emerald-300 shadow-xs shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-800 font-bold flex items-center justify-center shrink-0">
+                          {t.initial || t.name.charAt(0)}
+                        </div>
+                      )}
                       <div>
                         <span className="font-bold text-gray-900 block">{t.name}</span>
                         <span className="text-[10px] text-gray-400">ID: {t.id}</span>
@@ -148,7 +185,7 @@ export const ManageTeachers: React.FC = () => {
       {/* Add / Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-gray-100">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative border border-gray-100 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setModalOpen(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1"
@@ -160,7 +197,64 @@ export const ManageTeachers: React.FC = () => {
               {editingTeacher ? 'শিক্ষকের তথ্য পরিবর্তন করুন' : 'নতুন শিক্ষক যোগ করুন'}
             </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+            {uploadError && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs">
+                {uploadError}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              {/* Photo Upload from Device Section */}
+              <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-200 space-y-2">
+                <label className="block font-bold text-gray-800">শিক্ষকের ছবি (ডিভাইস থেকে)</label>
+                <div className="flex items-center gap-4">
+                  {form.image ? (
+                    <img
+                      src={form.image}
+                      alt="Preview"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-emerald-600 shadow-xs shrink-0"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-emerald-50 border-2 border-dashed border-emerald-300 text-emerald-700 font-bold text-xl flex items-center justify-center shrink-0">
+                      {form.initial || form.name.charAt(0) || <ImageIcon className="w-6 h-6 text-emerald-400" />}
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5 flex-1">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleImageFileChange}
+                      className="hidden"
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 font-semibold rounded-lg shadow-2xs transition cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{form.image ? 'ছবি পরিবর্তন করুন' : 'ডিভাইস থেকে ছবি আপলোড'}</span>
+                      </button>
+
+                      {form.image && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg font-medium transition cursor-pointer"
+                        >
+                          ছবি মুছুন
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-400">
+                      কম্পিউটার বা মোবাইল থেকে JPG, PNG ছবি বেছে নিন (স্বয়ংক্রিয় রিসাইজ হবে)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block font-bold text-gray-700 mb-1">শিক্ষকের নাম *</label>
                 <input
@@ -243,7 +337,7 @@ export const ManageTeachers: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#15803d] hover:bg-[#166534] text-white font-semibold rounded-lg transition cursor-pointer"
+                  className="px-5 py-2 bg-[#15803d] hover:bg-[#166534] text-white font-semibold rounded-lg transition cursor-pointer shadow-xs"
                 >
                   সংরক্ষণ করুন
                 </button>

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSchool } from '../../context/SchoolContext';
+import { NavigationItem } from '../../types';
 import {
   Phone,
   Mail,
@@ -9,20 +10,112 @@ import {
   Menu,
   X,
   ChevronDown,
+  Award,
+  Users,
+  Building2,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { siteSettings, setViewMode, setIsAdmissionModalOpen } = useSchool();
+  const {
+    siteSettings,
+    setViewMode,
+    setIsAdmissionModalOpen,
+    currentFrontendPage,
+    setCurrentFrontendPage,
+    navigationItems,
+  } = useSchool();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [academicDropdownOpen, setAcademicDropdownOpen] = useState(false);
+  const [aboutDropdownOpen, setAboutDropdownOpen] = useState(false);
+  const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+
+  // Strictly respect navigationItems order and visibility configured in backend
+  const processedNavItems = useMemo(() => {
+    return navigationItems
+      .filter(
+        (item) =>
+          item.visible &&
+          item.url !== '#teachers' &&
+          item.url !== '#staff' &&
+          item.label !== 'শিক্ষক' &&
+          !item.label.includes('কর্মচারী')
+      )
+      .slice()
+      .sort((a, b) => a.order - b.order);
+  }, [navigationItems]);
+
+  const handleHomeClick = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setMobileMenuOpen(false);
+    setAboutDropdownOpen(false);
+    setMoreDropdownOpen(false);
+
+    if (currentFrontendPage !== 'home') {
+      setCurrentFrontendPage('home');
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const heroEl = document.getElementById('hero') || document.getElementById('home');
+    if (heroEl) {
+      heroEl.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const scrollToSection = (id: string) => {
     setMobileMenuOpen(false);
+    setAboutDropdownOpen(false);
+    setMoreDropdownOpen(false);
+
+    if (id === 'home' || id === 'hero') {
+      handleHomeClick();
+      return;
+    }
+
+    if (currentFrontendPage !== 'home') {
+      setCurrentFrontendPage('home');
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 60);
+      return;
+    }
+
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const navigateToResults = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setMobileMenuOpen(false);
+    setMoreDropdownOpen(false);
+    setCurrentFrontendPage('results');
+  };
+
+  const navigateToNotices = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setMobileMenuOpen(false);
+    setMoreDropdownOpen(false);
+    setCurrentFrontendPage('notices');
+  };
+
+  const navigateToTeachers = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setMobileMenuOpen(false);
+    setAboutDropdownOpen(false);
+    setMoreDropdownOpen(false);
+    setCurrentFrontendPage('teachers');
+  };
+
+  const navigateToStaff = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setMobileMenuOpen(false);
+    setAboutDropdownOpen(false);
+    setMoreDropdownOpen(false);
+    setCurrentFrontendPage('staff');
   };
 
   return (
@@ -72,10 +165,18 @@ export const Header: React.FC = () => {
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between">
         {/* Brand Logo & Name */}
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => scrollToSection('hero')}>
-          <div className="w-12 h-12 rounded-full bg-amber-400 border-2 border-emerald-800 flex items-center justify-center shadow-xs text-emerald-950 font-bold">
-            <GraduationCap className="w-7 h-7 text-emerald-900" />
-          </div>
+        <div className="flex items-center gap-3 cursor-pointer" onClick={handleHomeClick}>
+          {siteSettings.logoUrl ? (
+            <img
+              src={siteSettings.logoUrl}
+              alt="Logo"
+              className="w-12 h-12 rounded-full object-cover border-2 border-emerald-800 shadow-xs bg-white"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-amber-400 border-2 border-emerald-800 flex items-center justify-center shadow-xs text-emerald-950 font-bold">
+              <GraduationCap className="w-7 h-7 text-emerald-900" />
+            </div>
+          )}
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-emerald-900 leading-tight">
               {siteSettings.schoolNameBangla}
@@ -88,58 +189,90 @@ export const Header: React.FC = () => {
 
         {/* Desktop Navigation Links */}
         <nav className="hidden xl:flex items-center gap-5 text-sm font-medium text-gray-700">
-          <button onClick={() => scrollToSection('hero')} className="hover:text-emerald-700 transition cursor-pointer">
-            হোম
-          </button>
-          <button onClick={() => scrollToSection('about')} className="hover:text-emerald-700 transition cursor-pointer">
-            পরিচিতি
-          </button>
-          <button onClick={() => scrollToSection('teachers')} className="hover:text-emerald-700 transition cursor-pointer">
-            শিক্ষক
-          </button>
-          <button onClick={() => scrollToSection('notices')} className="hover:text-emerald-700 transition cursor-pointer">
-            নোটিশ
-          </button>
-          <button onClick={() => scrollToSection('news')} className="hover:text-emerald-700 transition cursor-pointer">
-            সংবাদ
-          </button>
-          <button onClick={() => scrollToSection('events')} className="hover:text-emerald-700 transition cursor-pointer">
-            ইভেন্ট
-          </button>
+          {processedNavItems.map((item) => {
+            const isAbout = item.label === 'পরিচিতি' || item.url === '#about';
+            if (isAbout) {
+              return (
+                <div className="relative" key={item.id}>
+                  <button
+                    onClick={() => setAboutDropdownOpen(!aboutDropdownOpen)}
+                    className="flex items-center gap-1 hover:text-emerald-700 transition cursor-pointer"
+                  >
+                    <span>পরিচিতি</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                  {aboutDropdownOpen && (
+                    <div
+                      className="absolute top-full mt-2 w-48 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50"
+                      onMouseLeave={() => setAboutDropdownOpen(false)}
+                    >
+                      <button
+                        onClick={() => {
+                          scrollToSection('about');
+                          setAboutDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
+                      >
+                        বিদ্যালয় পরিচিতি
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigateToTeachers();
+                          setAboutDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
+                      >
+                        শিক্ষক মণ্ডলী
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigateToStaff();
+                          setAboutDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
+                      >
+                        কর্মকর্তা ও কর্মচারী
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            }
 
-          {/* Academic Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setAcademicDropdownOpen(!academicDropdownOpen)}
-              className="flex items-center gap-1 hover:text-emerald-700 transition cursor-pointer"
-            >
-              <span>একাডেমিক</span>
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
-            {academicDropdownOpen && (
-              <div
-                className="absolute top-full mt-2 w-48 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50"
-                onMouseLeave={() => setAcademicDropdownOpen(false)}
+            const isResults = item.label === 'ফলাফল' || item.url === '/results' || item.url === '#results';
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (
+                    item.label === 'হোম' ||
+                    item.url === '#home' ||
+                    item.url === '#hero' ||
+                    item.url === '/' ||
+                    item.url === '#'
+                  ) {
+                    handleHomeClick();
+                  } else if (isResults) {
+                    navigateToResults();
+                  } else if (item.url === '/notices' || item.url === '#notices-page') {
+                    navigateToNotices();
+                  } else if (item.url.startsWith('#')) {
+                    scrollToSection(item.url.substring(1));
+                  } else {
+                    window.location.href = item.url;
+                  }
+                }}
+                className={`transition cursor-pointer ${
+                  isResults
+                    ? 'hover:text-emerald-700 text-emerald-800 font-semibold'
+                    : 'hover:text-emerald-700'
+                }`}
               >
-                <button
-                  onClick={() => { scrollToSection('programs'); setAcademicDropdownOpen(false); }}
-                  className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
-                >
-                  পাঠ্যক্রম ও সিলেবাস
-                </button>
-                <button
-                  onClick={() => { scrollToSection('stats'); setAcademicDropdownOpen(false); }}
-                  className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
-                >
-                  পরীক্ষার ফলাফল
-                </button>
-              </div>
-            )}
-          </div>
-
-          <button onClick={() => scrollToSection('gallery')} className="hover:text-emerald-700 transition cursor-pointer">
-            গ্যালারি
-          </button>
+                {item.label}
+              </button>
+            );
+          })}
 
           {/* More Dropdown */}
           <div className="relative">
@@ -206,59 +339,96 @@ export const Header: React.FC = () => {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="xl:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3 text-sm font-medium text-gray-800 shadow-md">
+          {processedNavItems.map((item) => {
+            const isAbout = item.label === 'পরিচিতি' || item.url === '#about';
+            if (isAbout) {
+                return (
+                  <div key={item.id} className="space-y-1">
+                    <div className="flex items-center justify-between py-1">
+                      <button
+                        onClick={() => scrollToSection('about')}
+                        className="text-left hover:text-emerald-700 cursor-pointer font-medium"
+                      >
+                        পরিচিতি
+                      </button>
+                      <button
+                        onClick={() => setMobileAboutOpen(!mobileAboutOpen)}
+                        className="p-1 text-gray-500 hover:text-emerald-700 cursor-pointer"
+                        title="সাবমেনু খুলুন/বন্ধ করুন"
+                      >
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform duration-200 ${
+                            mobileAboutOpen ? 'rotate-180 text-emerald-700' : ''
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {mobileAboutOpen && (
+                      <div className="pl-4 pr-2 py-1.5 space-y-1 text-xs bg-gray-50 rounded-lg border-l-2 border-emerald-600">
+                        <button
+                          onClick={() => scrollToSection('about')}
+                          className="block w-full text-left py-1 text-gray-700 hover:text-emerald-800"
+                        >
+                          বিদ্যালয় পরিচিতি
+                        </button>
+                        <button
+                          onClick={navigateToTeachers}
+                          className="block w-full text-left py-1 text-gray-700 hover:text-emerald-800"
+                        >
+                          শিক্ষক মণ্ডলী
+                        </button>
+                        <button
+                          onClick={navigateToStaff}
+                          className="block w-full text-left py-1 text-gray-700 hover:text-emerald-800"
+                        >
+                          কর্মকর্তা ও কর্মচারী
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (
+                      item.label === 'হোম' ||
+                      item.url === '#home' ||
+                      item.url === '#hero' ||
+                      item.url === '/' ||
+                      item.url === '#'
+                    ) {
+                      handleHomeClick();
+                    } else if (item.url.startsWith('#') && item.url !== '#notices-page') {
+                      scrollToSection(item.url.substring(1));
+                    } else if (item.url === '/results' || item.url === '#results' || item.label === 'ফলাফল') {
+                      navigateToResults();
+                    } else if (item.url === '/notices' || item.url === '#notices-page') {
+                      navigateToNotices();
+                    } else {
+                      window.location.href = item.url;
+                    }
+                  }}
+                  className="block w-full text-left py-1 hover:text-emerald-700 cursor-pointer"
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           <button
-            onClick={() => scrollToSection('hero')}
-            className="block w-full text-left py-1 hover:text-emerald-700"
+            onClick={navigateToResults}
+            className="block w-full text-left py-1 text-emerald-800 font-bold hover:text-emerald-900 cursor-pointer"
           >
-            হোম
+            পরীক্ষার ফলাফল ও মার্কশীট
           </button>
           <button
-            onClick={() => scrollToSection('about')}
-            className="block w-full text-left py-1 hover:text-emerald-700"
+            onClick={navigateToNotices}
+            className="block w-full text-left py-1 text-emerald-800 font-bold hover:text-emerald-900 cursor-pointer"
           >
-            পরিচিতি
-          </button>
-          <button
-            onClick={() => scrollToSection('teachers')}
-            className="block w-full text-left py-1 hover:text-emerald-700"
-          >
-            শিক্ষক
-          </button>
-          <button
-            onClick={() => scrollToSection('notices')}
-            className="block w-full text-left py-1 hover:text-emerald-700"
-          >
-            নোটিশ
-          </button>
-          <button
-            onClick={() => scrollToSection('news')}
-            className="block w-full text-left py-1 hover:text-emerald-700"
-          >
-            সংবাদ
-          </button>
-          <button
-            onClick={() => scrollToSection('events')}
-            className="block w-full text-left py-1 hover:text-emerald-700"
-          >
-            ইভেন্ট
-          </button>
-          <button
-            onClick={() => scrollToSection('programs')}
-            className="block w-full text-left py-1 hover:text-emerald-700"
-          >
-            একাডেমিক প্রোগ্রাম
-          </button>
-          <button
-            onClick={() => scrollToSection('gallery')}
-            className="block w-full text-left py-1 hover:text-emerald-700"
-          >
-            গ্যালারি
-          </button>
-          <button
-            onClick={() => scrollToSection('contact')}
-            className="block w-full text-left py-1 hover:text-emerald-700"
-          >
-            যোগাযোগ
+            সকল নোটিশ ও বিজ্ঞপ্তি
           </button>
           <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
             <button

@@ -1,11 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { SchoolProvider, useSchool } from './context/SchoolContext';
 import { FrontendView } from './components/frontend/FrontendView';
 import { AdminPanel } from './components/admin/AdminPanel';
+import { DedicatedResultsPage } from './components/frontend/DedicatedResultsPage';
+import { DedicatedNoticesPage } from './components/frontend/DedicatedNoticesPage';
+import { DedicatedTeachersPage } from './components/frontend/DedicatedTeachersPage';
+import { DedicatedStaffPage } from './components/frontend/DedicatedStaffPage';
 import { Shield, Globe } from 'lucide-react';
 
 const MainApp: React.FC = () => {
-  const { viewMode, setViewMode } = useSchool();
+  const { viewMode, setViewMode, currentFrontendPage } = useSchool();
+
+  if (currentFrontendPage === 'results') {
+    return <DedicatedResultsPage />;
+  }
+
+  if (currentFrontendPage === 'notices') {
+    return <DedicatedNoticesPage />;
+  }
+
+  if (currentFrontendPage === 'teachers') {
+    return <DedicatedTeachersPage />;
+  }
+
+  if (currentFrontendPage === 'staff') {
+    return <DedicatedStaffPage />;
+  }
 
   return (
     <div className="relative">
