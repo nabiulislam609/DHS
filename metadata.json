@@ -1,0 +1,6 @@
+{
+  "name": "Dadra High School - Web Portal & Admin Management System",
+  "description": "দাদরা উচ্চ বিদ্যালয়ের অফিসিয়াল ওয়েবসাইট এবং সম্পূর্ণ অ্যাডমিন ম্যানেজমেন্ট ব্যাকএন্ড প্যানেল।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
