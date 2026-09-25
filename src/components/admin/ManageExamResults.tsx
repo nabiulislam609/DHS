@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSchool } from '../../context/SchoolContext';
 import {
   Bookmark,
@@ -14,8 +14,15 @@ import {
   RefreshCw,
   UserCheck,
   GraduationCap,
+  Pencil,
+  Camera,
+  Upload,
 } from 'lucide-react';
 import { ExamResult, SubjectMark, Student } from '../../types';
+import { compressImageFile } from '../../utils/imageUpload';
+import { getStudentResultImage, getStudentPhoto } from '../../utils/studentPhoto';
+
+export { getStudentResultImage, getStudentPhoto };
 import {
   CLASS_OPTIONS,
   GROUP_OPTIONS,
@@ -99,9 +106,11 @@ export const ManageExamResults: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewingResult, setViewingResult] = useState<ExamResult | null>(null);
+  const [editingResultId, setEditingResultId] = useState<string | null>(null);
 
   // Form State
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState({
     studentName: '',
     studentId: '',
@@ -112,8 +121,22 @@ export const ManageExamResults: React.FC = () => {
     examTerm: AVAILABLE_EXAM_TERMS[0],
     customTerm: '',
     isCustomTerm: false,
+    studentImage: '' as string | undefined,
     status: 'PUBLISHED' as 'PUBLISHED' | 'DRAFT',
   });
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressed = await compressImageFile(file, 400, 400, 0.85);
+      setForm((prev) => ({ ...prev, studentImage: compressed }));
+    } catch (err) {
+      console.error('Failed to compress image:', err);
+      alert('ছবি আপলোড করতে ব্যর্থ হয়েছে। অনুগ্রহ করে অন্য ছবি নির্বাচন করুন।');
+    }
+  };
 
   const [subjects, setSubjects] = useState<SubjectMark[]>([]);
 
@@ -219,15 +242,24 @@ export const ManageExamResults: React.FC = () => {
     const hasGrp = isClassWithGroups(stuClass);
     const stuGroup = hasGrp ? stu.group || 'বিজ্ঞান' : 'সাধারণ';
 
-    setForm((prev) => ({
-      ...prev,
-      studentName: stu.name,
-      roll: stu.roll,
-      studentId: `DHS-2026-${stu.roll}`,
-      studentClass: stuClass,
-      studentGroup: stuGroup,
-      section: stu.section || 'A',
-    }));
+    setForm((prev) => {
+      const resolvedImage =
+        stu.image ||
+        getStudentResultImage({ studentName: stu.name, roll: stu.roll, studentId: stu.id }, students) ||
+        prev.studentImage ||
+        '';
+
+      return {
+        ...prev,
+        studentName: stu.name,
+        roll: stu.roll,
+        studentId: `DHS-2026-${stu.roll}`,
+        studentClass: stuClass,
+        studentGroup: stuGroup,
+        section: stu.section || 'A',
+        studentImage: resolvedImage,
+      };
+    });
 
     if (stu.subjects && stu.subjects.length > 0) {
       setSubjects(
@@ -290,6 +322,7 @@ export const ManageExamResults: React.FC = () => {
   };
 
   const openAddModal = () => {
+    setEditingResultId(null);
     const nextNum = 1000 + examResults.length + 1;
     const initialClass = '১০ম শ্রেণি';
     const initialGroup = 'বিজ্ঞান';
@@ -304,9 +337,66 @@ export const ManageExamResults: React.FC = () => {
       examTerm: AVAILABLE_EXAM_TERMS[0],
       customTerm: '',
       isCustomTerm: false,
+      studentImage: '',
       status: 'PUBLISHED',
     });
     setSubjects(generateDefaultSubjectMarks(initialClass, initialGroup));
+    setShowAddSubjectRow(false);
+    setModalOpen(true);
+  };
+
+  const openEditModal = (result: ExamResult) => {
+    setEditingResultId(result.id);
+    setSelectedStudentId('');
+
+    // Extract base class (e.g. '১০ম শ্রেণি') and group (e.g. 'বিজ্ঞান')
+    let baseClass = '১০ম শ্রেণি';
+    if (result.studentClass.includes('১০ম') || result.studentClass.includes('10')) {
+      baseClass = '১০ম শ্রেণি';
+    } else if (result.studentClass.includes('৯ম') || result.studentClass.includes('9')) {
+      baseClass = '৯ম শ্রেণি';
+    } else if (result.studentClass.includes('৮ম') || result.studentClass.includes('8')) {
+      baseClass = '৮ম শ্রেণি';
+    } else if (result.studentClass.includes('৭ম') || result.studentClass.includes('7')) {
+      baseClass = '৭ম শ্রেণি';
+    } else if (result.studentClass.includes('৬ষ্ঠ') || result.studentClass.includes('6')) {
+      baseClass = '৬ষ্ঠ শ্রেণি';
+    } else {
+      baseClass = result.studentClass;
+    }
+
+    let group = 'বিজ্ঞান';
+    const clsLower = result.studentClass.toLowerCase();
+    if (clsLower.includes('মানবিক') || clsLower.includes('humanities')) {
+      group = 'মানবিক';
+    } else if (clsLower.includes('ব্যবসায়') || clsLower.includes('ব্যবসায়') || clsLower.includes('commerce') || clsLower.includes('business')) {
+      group = 'ব্যবসায় শিক্ষা';
+    } else {
+      group = 'বিজ্ঞান';
+    }
+
+    const isStandardTerm = AVAILABLE_EXAM_TERMS.includes(result.examTerm);
+
+    setForm({
+      studentName: result.studentName,
+      studentId: result.studentId,
+      roll: result.roll,
+      studentClass: baseClass,
+      studentGroup: group,
+      section: result.section || 'A',
+      examTerm: isStandardTerm ? result.examTerm : AVAILABLE_EXAM_TERMS[0],
+      customTerm: isStandardTerm ? '' : result.examTerm,
+      isCustomTerm: !isStandardTerm,
+      studentImage: result.studentImage || getStudentResultImage(result, students) || '',
+      status: result.status,
+    });
+
+    setSubjects(
+      result.subjects && result.subjects.length > 0
+        ? result.subjects.map((s) => ({ ...s }))
+        : generateDefaultSubjectMarks(baseClass, group)
+    );
+
     setShowAddSubjectRow(false);
     setModalOpen(true);
   };
@@ -341,22 +431,53 @@ export const ManageExamResults: React.FC = () => {
       ? `${form.studentClass} (${form.studentGroup} বিভাগ)`
       : form.studentClass;
 
-    addExamResult({
-      studentName: form.studentName.trim(),
-      studentId: form.studentId.trim() || `DHS-2026-${Date.now()}`,
-      roll: form.roll.trim(),
-      studentClass: fullClassString,
-      section: form.section,
-      examTerm: termToUse,
-      totalMarks,
-      gpa: avgGp,
-      grade: overallGrade,
-      status: form.status,
-      subjects,
-      publishedDate: new Date().toISOString().split('T')[0],
-    });
+    const finalStudentImage =
+      form.studentImage && form.studentImage.trim()
+        ? form.studentImage.trim()
+        : getStudentResultImage(
+            {
+              studentName: form.studentName.trim(),
+              roll: form.roll.trim(),
+              studentId: form.studentId.trim(),
+            },
+            students
+          );
+
+    if (editingResultId) {
+      updateExamResult(editingResultId, {
+        studentName: form.studentName.trim(),
+        studentId: form.studentId.trim(),
+        studentImage: finalStudentImage,
+        roll: form.roll.trim(),
+        studentClass: fullClassString,
+        section: form.section,
+        examTerm: termToUse,
+        totalMarks,
+        gpa: avgGp,
+        grade: overallGrade,
+        status: form.status,
+        subjects,
+      });
+    } else {
+      addExamResult({
+        studentName: form.studentName.trim(),
+        studentId: form.studentId.trim() || `DHS-2026-${Date.now()}`,
+        studentImage: finalStudentImage,
+        roll: form.roll.trim(),
+        studentClass: fullClassString,
+        section: form.section,
+        examTerm: termToUse,
+        totalMarks,
+        gpa: avgGp,
+        grade: overallGrade,
+        status: form.status,
+        subjects,
+        publishedDate: new Date().toISOString().split('T')[0],
+      });
+    }
 
     setModalOpen(false);
+    setEditingResultId(null);
   };
 
   const filteredResults = examResults.filter((r) => {
@@ -433,12 +554,30 @@ export const ManageExamResults: React.FC = () => {
               ) : (
                 filteredResults.map((result) => (
                   <tr key={result.id} className="hover:bg-gray-50/60 transition">
-                    <td className="py-3.5 px-4">
-                      <div>
-                        <span className="font-bold text-gray-900 block">{result.studentName}</span>
-                        <span className="text-emerald-700 font-mono text-[11px] font-semibold">
-                          {result.studentId}
-                        </span>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-emerald-50 border border-emerald-200 shrink-0 shadow-2xs flex items-center justify-center">
+                          {(() => {
+                            const avatar = getStudentResultImage(result, students);
+                            return avatar ? (
+                              <img
+                                src={avatar}
+                                alt={result.studentName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="font-bold text-emerald-800 text-xs">
+                                {result.studentName.charAt(0)}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div>
+                          <span className="font-bold text-gray-900 block leading-tight">{result.studentName}</span>
+                          <span className="text-emerald-700 font-mono text-[11px] font-semibold">
+                            {result.studentId}
+                          </span>
+                        </div>
                       </div>
                     </td>
 
@@ -481,9 +620,16 @@ export const ManageExamResults: React.FC = () => {
                         <button
                           onClick={() => setViewingResult(result)}
                           className="p-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 transition cursor-pointer"
-                          title="মার্কশীট দেখুন"
+                          title="মার্কশীট দেখুন (View Marksheet)"
                         >
                           <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openEditModal(result)}
+                          className="p-1.5 rounded-md hover:bg-blue-50 text-blue-600 hover:text-blue-800 transition cursor-pointer"
+                          title="ফলাফল সম্পাদনা (Edit Result)"
+                        >
+                          <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => {
@@ -520,10 +666,12 @@ export const ManageExamResults: React.FC = () => {
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <Bookmark className="w-5 h-5 text-emerald-700" />
-                <h3 className="text-lg font-bold text-gray-900">পরীক্ষার ফলাফল যুক্ত করুন</h3>
+                <h3 className="text-lg font-bold text-gray-900">
+                  {editingResultId ? 'পরীক্ষার ফলাফল সম্পাদনা করুন (Edit Result)' : 'পরীক্ষার ফলাফল যুক্ত করুন (Add Result)'}
+                </h3>
               </div>
               <span className="text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-semibold">
-                স্বয়ংক্রিয় বিষয় বিন্যাস
+                {editingResultId ? 'তথ্য ও নম্বর সংশোধন' : 'স্বয়ংক্রিয় বিষয় বিন্যাস'}
               </span>
             </div>
 
@@ -550,6 +698,57 @@ export const ManageExamResults: React.FC = () => {
                     );
                   })}
                 </select>
+              </div>
+
+              {/* Student Photo Upload & Preview Section */}
+              <div className="flex items-center gap-3.5 bg-gray-50/80 p-3 rounded-2xl border border-gray-200">
+                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-emerald-300 bg-white shadow-2xs flex items-center justify-center shrink-0">
+                  {form.studentImage ? (
+                    <img
+                      src={form.studentImage}
+                      alt={form.studentName || 'Student'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="font-bold text-emerald-800 text-lg">
+                      {form.studentName ? form.studentName.charAt(0) : <Camera className="w-5 h-5 text-gray-400" />}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-1">
+                  <span className="block font-bold text-gray-800 text-xs">শিক্ষার্থীর ছবি (Student Photo)</span>
+                  <p className="text-[11px] text-gray-500">
+                    শিক্ষার্থীর ছবি যুক্ত করুন (মার্কশীট ও তালিকায় প্রদর্শিত হবে)
+                  </p>
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-[11px] font-bold transition cursor-pointer shadow-2xs"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{form.studentImage ? 'ছবি পরিবর্তন' : 'ছবি আপলোড করুন'}</span>
+                    </button>
+
+                    {form.studentImage && (
+                      <button
+                        type="button"
+                        onClick={() => setForm((prev) => ({ ...prev, studentImage: '' }))}
+                        className="text-[11px] text-rose-600 hover:text-rose-800 font-semibold px-2 py-0.5 rounded transition cursor-pointer"
+                      >
+                        ছবি মুছুন
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -959,7 +1158,7 @@ export const ManageExamResults: React.FC = () => {
                   type="submit"
                   className="px-5 py-2 bg-[#059669] hover:bg-[#047857] text-white font-semibold rounded-xl shadow-xs transition cursor-pointer"
                 >
-                  Save & Publish Result
+                  {editingResultId ? 'পরিবর্তন সংরক্ষণ করুন (Save Changes)' : 'Save & Publish Result'}
                 </button>
               </div>
             </form>
@@ -978,14 +1177,32 @@ export const ManageExamResults: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
 
-            <div>
-              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full uppercase">
-                {viewingResult.status}
-              </span>
-              <h3 className="text-lg font-bold text-gray-900 mt-1">{viewingResult.studentName}</h3>
-              <p className="text-xs text-gray-500 font-mono">
-                {viewingResult.studentId} • Roll: {viewingResult.roll} • {viewingResult.examTerm}
-              </p>
+            <div className="flex items-center gap-3.5">
+              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-emerald-300 shadow-sm shrink-0 bg-emerald-50 flex items-center justify-center">
+                {(() => {
+                  const avatar = getStudentResultImage(viewingResult, students);
+                  return avatar ? (
+                    <img
+                      src={avatar}
+                      alt={viewingResult.studentName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-lg font-bold text-emerald-800">
+                      {viewingResult.studentName.charAt(0)}
+                    </span>
+                  );
+                })()}
+              </div>
+              <div>
+                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full uppercase">
+                  {viewingResult.status}
+                </span>
+                <h3 className="text-lg font-bold text-gray-900 mt-0.5">{viewingResult.studentName}</h3>
+                <p className="text-xs text-gray-500 font-mono">
+                  {viewingResult.studentId} • Roll: {viewingResult.roll} • {viewingResult.examTerm}
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2 bg-emerald-50/60 p-3 rounded-xl text-center text-xs">
@@ -1019,7 +1236,18 @@ export const ManageExamResults: React.FC = () => {
               ))}
             </div>
 
-            <div className="pt-2 flex justify-end">
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  const res = viewingResult;
+                  setViewingResult(null);
+                  openEditModal(res);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold rounded-xl text-xs transition cursor-pointer"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                <span>সম্পাদনা করুন (Edit)</span>
+              </button>
               <button
                 onClick={() => setViewingResult(null)}
                 className="px-4 py-1.5 bg-gray-100 text-gray-700 font-semibold rounded-xl text-xs hover:bg-gray-200 cursor-pointer"

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useSchool } from '../../context/SchoolContext';
 import {
   Search,
@@ -12,10 +12,12 @@ import {
   AlertCircle,
   Sparkles,
   GraduationCap,
+  UserCheck,
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 import { ExamResult } from '../../types';
+import { getStudentResultImage, getStudentPhoto } from '../../utils/studentPhoto';
 
 // Convert Bengali numerals to English digits for flexible search
 const toEnglishDigits = (str: string): string => {
@@ -49,16 +51,8 @@ export const translateSubject = (name: string): string => {
   return map[name] || name;
 };
 
-// Translate term names to Bengali
+// Translate term names - keep exact string to match Result Add
 export const translateTerm = (term: string): string => {
-  if (term.includes('Pre-Test')) return 'প্রি-টেস্ট পরীক্ষা (২০২৬)';
-  if (term.includes('Test Examination')) return 'নির্বাচনী পরীক্ষা (২০২৬)';
-  if (term.includes('1st Term')) return '১ম সাময়িক পরীক্ষা (২০২৬)';
-  if (term.includes('2nd Term')) return '২য় সাময়িক পরীক্ষা (২০২৬)';
-  if (term.includes('Annual')) return 'বার্ষিক পরীক্ষা (২০২৬)';
-  if (term.includes('Half-Yearly')) return 'অর্ধবার্ষিক পরীক্ষা (২০২৬)';
-  if (term.includes('Model Test')) return 'মডেল টেস্ট পরীক্ষা (২০২৬)';
-  if (term.includes('Monthly')) return 'মাসিক পরীক্ষা (২০২৬)';
   return term;
 };
 
@@ -85,32 +79,19 @@ const translateStudentName = (name: string): string => {
   return map[name] || name;
 };
 
-// Available Class Options for Selection
-export const SEARCH_CLASS_OPTIONS = [
-  { value: '', label: '-- শ্রেণি নির্বাচন করুন (বাধ্যতামূলক) --' },
-  { value: '১০ম শ্রেণি (বিজ্ঞান)', label: '১০ম শ্রেণি (বিজ্ঞান বিভাগ)' },
-  { value: '১০ম শ্রেণি (মানবিক)', label: '১০ম শ্রেণি (মানবিক বিভাগ)' },
-  { value: '১০ম শ্রেণি (ব্যবসায় শিক্ষা)', label: '১০ম শ্রেণি (ব্যবসায় শিক্ষা বিভাগ)' },
-  { value: '৯ম শ্রেণি (বিজ্ঞান)', label: '৯ম শ্রেণি (বিজ্ঞান বিভাগ)' },
-  { value: '৯ম শ্রেণি (মানবিক)', label: '৯ম শ্রেণি (মানবিক বিভাগ)' },
-  { value: '৯ম শ্রেণি (ব্যবসায় শিক্ষা)', label: '৯ম শ্রেণি (ব্যবসায় শিক্ষা বিভাগ)' },
-  { value: '৮ম শ্রেণি', label: '৮ম শ্রেণি' },
-  { value: '৭ম শ্রেণি', label: '৭ম শ্রেণি' },
-  { value: '৬ষ্ঠ শ্রেণি', label: '৬ষ্ঠ শ্রেণি' },
-];
+import { AVAILABLE_EXAM_TERMS } from '../admin/ManageExamResults';
 
-// Available Exam Terms for Selection
-export const SEARCH_TERM_OPTIONS = [
-  { value: '', label: '-- পরীক্ষার নাম / টার্ম নির্বাচন করুন (বাধ্যতামূলক) --' },
-  { value: 'Pre-Test Examination (2026)', label: 'প্রাক-নির্বাচনী পরীক্ষা (Pre-Test) ২০২৬' },
-  { value: 'Test Examination / নির্বাচনী পরীক্ষা (2026)', label: 'নির্বাচনী পরীক্ষা (Test Examination) ২০২৬' },
-  { value: '1st Term Examination / ১ম সাময়িক পরীক্ষা (2026)', label: '১ম সাময়িক পরীক্ষা (1st Term) ২০২৬' },
-  { value: '2nd Term Examination / ২য় সাময়িক পরীক্ষা (2026)', label: '২য় সাময়িক পরীক্ষা (2nd Term) ২০২৬' },
-  { value: 'Half-Yearly Examination / অর্ধবার্ষিক পরীক্ষা (2026)', label: 'অর্ধবার্ষিক পরীক্ষা (Half-Yearly) ২০২৬' },
-  { value: 'Annual Examination / বার্ষিক পরীক্ষা (2026)', label: 'বার্ষিক পরীক্ষা (Annual Examination) ২০২৬' },
-  { value: 'Model Test Examination (2026)', label: 'মডেল টেস্ট পরীক্ষা ২০২৬' },
-  { value: 'Monthly Class Test / মাসিক পরীক্ষা (2026)', label: 'মাসিক ক্লাস টেস্ট ২০২৬' },
-  { value: 'Special Assessment / বিশেষ মূল্যায়ন (2026)', label: 'বিশেষ মূল্যায়ন ২০২৬' },
+// Available Class Options for Selection - Exact matching names as used in Result Add
+export const AVAILABLE_SEARCH_CLASSES = [
+  '১০ম শ্রেণি (বিজ্ঞান বিভাগ)',
+  '১০ম শ্রেণি (মানবিক বিভাগ)',
+  '১০ম শ্রেণি (ব্যবসায় শিক্ষা বিভাগ)',
+  '৯ম শ্রেণি (বিজ্ঞান বিভাগ)',
+  '৯ম শ্রেণি (মানবিক বিভাগ)',
+  '৯ম শ্রেণি (ব্যবসায় শিক্ষা বিভাগ)',
+  '৮ম শ্রেণি',
+  '৭ম শ্রেণি',
+  '৬ষ্ঠ শ্রেণি',
 ];
 
 /**
@@ -129,7 +110,7 @@ export const parseClassDetails = (cls: string): { grade: string; group: string }
   let group = '';
   if (normalized.includes('বিজ্ঞান') || normalized.includes('science')) group = 'science';
   else if (normalized.includes('মানবিক') || normalized.includes('humanities') || normalized.includes('arts')) group = 'humanities';
-  else if (normalized.includes('ব্যবসায়') || normalized.includes('business') || normalized.includes('commerce')) group = 'commerce';
+  else if (normalized.includes('ব্যবসায়') || normalized.includes('ব্যবসায়') || normalized.includes('business') || normalized.includes('commerce')) group = 'commerce';
 
   return { grade, group };
 };
@@ -142,6 +123,9 @@ export const parseClassDetails = (cls: string): { grade: string; group: string }
 export const isClassMatchStrict = (recordClass: string, selectedClass: string): boolean => {
   if (!selectedClass || selectedClass.trim() === '' || selectedClass.startsWith('--')) {
     return false;
+  }
+  if (recordClass.trim() === selectedClass.trim()) {
+    return true;
   }
   const r = parseClassDetails(recordClass);
   const s = parseClassDetails(selectedClass);
@@ -192,13 +176,16 @@ export const isTermMatchStrict = (recordTerm: string, selectedTerm: string): boo
   if (!selectedTerm || selectedTerm.trim() === '' || selectedTerm.startsWith('--')) {
     return false;
   }
+  if (recordTerm.trim().toLowerCase() === selectedTerm.trim().toLowerCase()) {
+    return true;
+  }
   const rKey = getTermCanonicalKey(recordTerm);
   const sKey = getTermCanonicalKey(selectedTerm);
-  return rKey === sKey;
+  return rKey !== '' && rKey === sKey;
 };
 
 export const AcademicResultsSearch: React.FC = () => {
-  const { examResults } = useSchool();
+  const { examResults, students } = useSchool();
   const [searchRoll, setSearchRoll] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedTerm, setSelectedTerm] = useState('');
@@ -216,6 +203,27 @@ export const AcademicResultsSearch: React.FC = () => {
   } | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const marksheetRef = useRef<HTMLDivElement>(null);
+
+  // Dynamically assemble available exam terms and classes, matching Result Add exactly
+  const availableExamTerms = useMemo(() => {
+    const list = [...AVAILABLE_EXAM_TERMS];
+    examResults.forEach((r) => {
+      if (r.examTerm && r.examTerm.trim() && !list.includes(r.examTerm.trim())) {
+        list.push(r.examTerm.trim());
+      }
+    });
+    return list;
+  }, [examResults]);
+
+  const availableClasses = useMemo(() => {
+    const list = [...AVAILABLE_SEARCH_CLASSES];
+    examResults.forEach((r) => {
+      if (r.studentClass && r.studentClass.trim() && !list.includes(r.studentClass.trim())) {
+        list.push(r.studentClass.trim());
+      }
+    });
+    return list;
+  }, [examResults]);
 
   const handleSearch = (rollOverride?: string, classOverride?: string, termOverride?: string) => {
     const rawRoll = (rollOverride !== undefined ? rollOverride : searchRoll).trim();
@@ -567,9 +575,10 @@ export const AcademicResultsSearch: React.FC = () => {
                     : 'bg-gray-50/70 border border-gray-200 text-gray-800 focus:outline-hidden focus:border-emerald-600 focus:bg-white'
                 }`}
               >
-                {SEARCH_CLASS_OPTIONS.map((c, idx) => (
-                  <option key={idx} value={c.value}>
-                    {c.label}
+                <option value="">-- শ্রেণি নির্বাচন করুন (বাধ্যতামূলক) --</option>
+                {availableClasses.map((c, idx) => (
+                  <option key={idx} value={c}>
+                    {c}
                   </option>
                 ))}
               </select>
@@ -581,7 +590,7 @@ export const AcademicResultsSearch: React.FC = () => {
               )}
             </div>
 
-            {/* Examination Term Dropdown */}
+            {/* Examination Term Dropdown - EXACT SAME options as Result Add */}
             <div className="md:col-span-3 space-y-1.5">
               <label className="block text-xs font-bold text-gray-700">
                 পরীক্ষার নাম / টার্ম <span className="text-red-500">*</span>
@@ -600,9 +609,10 @@ export const AcademicResultsSearch: React.FC = () => {
                     : 'bg-gray-50/70 border border-gray-200 text-gray-800 focus:outline-hidden focus:border-emerald-600 focus:bg-white'
                 }`}
               >
-                {SEARCH_TERM_OPTIONS.map((t, idx) => (
-                  <option key={idx} value={t.value}>
-                    {t.label}
+                <option value="">-- পরীক্ষার নাম / টার্ম নির্বাচন করুন (বাধ্যতামূলক) --</option>
+                {availableExamTerms.map((t, idx) => (
+                  <option key={idx} value={t}>
+                    {t}
                   </option>
                 ))}
               </select>
@@ -631,30 +641,50 @@ export const AcademicResultsSearch: React.FC = () => {
             <span className="text-gray-500 font-bold">সঠিক তথ্য দিয়ে দ্রুত যাচাই করুন:</span>
             <button
               type="button"
-              onClick={() => selectDemoRecord('1', '১০ম শ্রেণি (বিজ্ঞান)', 'Pre-Test Examination (2026)')}
-              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
+              onClick={() => selectDemoRecord('1', '১০ম শ্রেণি (বিজ্ঞান বিভাগ)', 'Pre-Test Examination (2026)')}
+              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 pl-1.5 pr-3 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-2 text-[11px]"
             >
+              <img
+                src="https://images.unsplash.com/photo-1544717305-2782549b5136?w=100&h=100&fit=crop&crop=faces&q=80"
+                alt="Sadia Jahan"
+                className="w-5 h-5 rounded-full object-cover border border-emerald-300 shrink-0"
+              />
               <span>সাদিয়া জাহান (১০ম বিজ্ঞান - রোল ১)</span>
             </button>
             <button
               type="button"
-              onClick={() => selectDemoRecord('2', '১০ম শ্রেণি (বিজ্ঞান)', 'Pre-Test Examination (2026)')}
-              className="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
+              onClick={() => selectDemoRecord('2', '১০ম শ্রেণি (বিজ্ঞান বিভাগ)', 'Pre-Test Examination (2026)')}
+              className="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 pl-1.5 pr-3 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-2 text-[11px]"
             >
+              <img
+                src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=faces&q=80"
+                alt="Tanvir Ahmed"
+                className="w-5 h-5 rounded-full object-cover border border-blue-300 shrink-0"
+              />
               <span>তানভীর আহমেদ (১০ম বিজ্ঞান - রোল ২)</span>
             </button>
             <button
               type="button"
               onClick={() => selectDemoRecord('1', '৮ম শ্রেণি', 'Annual Examination / বার্ষিক পরীক্ষা (2026)')}
-              className="bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
+              className="bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 pl-1.5 pr-3 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-2 text-[11px]"
             >
+              <img
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces&q=80"
+                alt="Rafsan Zaman"
+                className="w-5 h-5 rounded-full object-cover border border-purple-300 shrink-0"
+              />
               <span>রাফসান জামান (৮ম শ্রেণি - রোল ১, বার্ষিক)</span>
             </button>
             <button
               type="button"
-              onClick={() => selectDemoRecord('1', '৯ম শ্রেণি (মানবিক)', '1st Term Examination / ১ম সাময়িক পরীক্ষা (2026)')}
-              className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
+              onClick={() => selectDemoRecord('1', '৯ম শ্রেণি (মানবিক বিভাগ)', '1st Term Examination / ১ম সাময়িক পরীক্ষা (2026)')}
+              className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 pl-1.5 pr-3 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-2 text-[11px]"
             >
+              <img
+                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=faces&q=80"
+                alt="Sumaiya Akter"
+                className="w-5 h-5 rounded-full object-cover border border-amber-300 shrink-0"
+              />
               <span>সুমাইয়া আক্তার (৯ম মানবিক - রোল ১, ১ম সাময়িক)</span>
             </button>
           </div>
@@ -766,42 +796,76 @@ export const AcademicResultsSearch: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Student Information Credentials Box */}
-                    <div className="bg-[#f8fafc] rounded-xl border border-gray-300 overflow-hidden text-xs space-y-0">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-300">
-                        <div className="p-2.5">
-                          <span className="text-gray-500 block text-[10px] font-medium">শিক্ষার্থীর নাম</span>
-                          <span className="text-gray-950 font-bold text-xs sm:text-sm block mt-0.5">
-                            {translateStudentName(searchedResult.studentName)}
-                          </span>
+                    {/* Student Information Credentials Box with Official Photo */}
+                    {(() => {
+                      const studentPhoto = getStudentResultImage(searchedResult, students);
+                      return (
+                        <div className="bg-[#f8fafc] rounded-xl border border-gray-300 overflow-hidden text-xs space-y-0">
+                          <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-gray-300">
+                            {/* Student Passport Photo Box */}
+                            <div className="p-3 bg-white flex sm:flex-col items-center justify-center gap-2 shrink-0 sm:w-28 text-center border-b sm:border-b-0 border-gray-200">
+                              <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg overflow-hidden border-2 border-emerald-800 shadow-2xs bg-gray-50 flex items-center justify-center relative">
+                                {studentPhoto ? (
+                                  <img
+                                    src={studentPhoto}
+                                    alt={searchedResult.studentName}
+                                    crossOrigin="anonymous"
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="text-center p-1 text-gray-400">
+                                    <UserCheck className="w-7 h-7 mx-auto text-gray-300" />
+                                    <span className="text-[9px] font-bold block mt-1">ছবি সংরক্ষিত</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-left sm:text-center">
+                                <span className="inline-block text-[9px] font-bold text-emerald-900 bg-emerald-100/70 border border-emerald-300 px-1.5 py-0.5 rounded leading-none">
+                                  শিক্ষার্থীর ছবি
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Credentials Grid */}
+                            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-300">
+                              <div className="p-2.5">
+                                <span className="text-gray-500 block text-[10px] font-medium">শিক্ষার্থীর নাম</span>
+                                <span className="text-gray-950 font-bold text-xs sm:text-sm block mt-0.5">
+                                  {translateStudentName(searchedResult.studentName)}
+                                </span>
+                              </div>
+                              <div className="p-2.5 bg-emerald-50/60">
+                                <span className="text-emerald-900 block text-[10px] font-bold">শ্রেণির রোল নম্বর</span>
+                                <span className="text-emerald-950 font-black text-sm sm:text-base block mt-0.5">
+                                  রোল: {searchedResult.roll}
+                                </span>
+                              </div>
+                              <div className="p-2.5">
+                                <span className="text-gray-500 block text-[10px] font-medium">শ্রেণি ও শাখা</span>
+                                <span className="text-gray-950 font-bold text-xs sm:text-sm block mt-0.5">
+                                  {translateClass(searchedResult.studentClass)} {searchedResult.section ? `• শাখা: ${searchedResult.section}` : ''}
+                                </span>
+                              </div>
+                              <div className="p-2.5">
+                                <span className="text-gray-500 block text-[10px] font-medium">পরীক্ষার নাম</span>
+                                <span className="text-gray-950 font-bold text-xs sm:text-sm block mt-0.5">
+                                  {translateTerm(searchedResult.examTerm)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Secondary Institutional Meta Bar */}
+                          <div className="bg-gray-100/90 px-3 py-1.5 border-t border-gray-300 flex flex-wrap items-center justify-between text-[9.5px] text-gray-600 font-medium gap-2">
+                            <span>শিক্ষাবর্ষ: ২০২৬</span>
+                            <span>শাখা/গ্রুপ: {searchedResult.section || 'সাধারণ'}</span>
+                            <span>শিক্ষার্থী আইডি: {searchedResult.studentId || `DHS-2026-${searchedResult.roll}`}</span>
+                            <span>ফলাফল প্রকাশের তারিখ: ২৪ ফেব্রুয়ারি ২০২৬</span>
+                            <span>সনদ ট্র্যাকিং: DHS-2026-R{searchedResult.roll}</span>
+                          </div>
                         </div>
-                        <div className="p-2.5 bg-emerald-50/60">
-                          <span className="text-emerald-900 block text-[10px] font-bold">শ্রেণির রোল নম্বর</span>
-                          <span className="text-emerald-950 font-black text-sm sm:text-base block mt-0.5">
-                            রোল: {searchedResult.roll}
-                          </span>
-                        </div>
-                        <div className="p-2.5">
-                          <span className="text-gray-500 block text-[10px] font-medium">শ্রেণি ও শাখা</span>
-                          <span className="text-gray-950 font-bold text-xs sm:text-sm block mt-0.5">
-                            {translateClass(searchedResult.studentClass)} {searchedResult.section ? `• শাখা: ${searchedResult.section}` : ''}
-                          </span>
-                        </div>
-                        <div className="p-2.5">
-                          <span className="text-gray-500 block text-[10px] font-medium">পরীক্ষার নাম</span>
-                          <span className="text-gray-950 font-bold text-xs sm:text-sm block mt-0.5">
-                            {translateTerm(searchedResult.examTerm)}
-                          </span>
-                        </div>
-                      </div>
-                      {/* Secondary Institutional Meta Bar */}
-                      <div className="bg-gray-100/90 px-3 py-1.5 border-t border-gray-300 flex flex-wrap items-center justify-between text-[9.5px] text-gray-600 font-medium gap-2">
-                        <span>শিক্ষাবর্ষ: ২০২৬</span>
-                        <span>শাখা/গ্রুপ: {searchedResult.section || 'সাধারণ'}</span>
-                        <span>ফলাফল প্রকাশের তারিখ: ২৪ ফেব্রুয়ারি ২০২৬</span>
-                        <span>সনদ ট্র্যাকিং: DHS-2026-R{searchedResult.roll}</span>
-                      </div>
-                    </div>
+                      );
+                    })()}
 
                     {/* GPA & Result Summary Cards */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">

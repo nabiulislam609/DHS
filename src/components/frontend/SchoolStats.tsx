@@ -1,9 +1,15 @@
 import React from 'react';
 import { useSchool } from '../../context/SchoolContext';
-import { Users, GraduationCap, TrendingUp, Award, Building, Trophy } from 'lucide-react';
+import { Users, GraduationCap, TrendingUp, Award, Building, Trophy, BarChart3 } from 'lucide-react';
 
 export const SchoolStats: React.FC = () => {
   const { siteSettings } = useSchool();
+
+  const customStatsItems = (siteSettings.customStats || []).map((cs) => ({
+    label: cs.label,
+    value: cs.value,
+    icon: BarChart3,
+  }));
 
   const stats = [
     {
@@ -36,6 +42,7 @@ export const SchoolStats: React.FC = () => {
       value: siteSettings.totalAwards,
       icon: Trophy,
     },
+    ...customStatsItems,
   ];
 
   return (

@@ -152,6 +152,15 @@ export const Header: React.FC = () => {
     setCurrentFrontendPage('staff');
   };
 
+  const topBarPaddingY =
+    siteSettings.topBarPaddingY !== undefined
+      ? siteSettings.topBarPaddingY
+      : siteSettings.topBarHeight === 'compact'
+      ? 3
+      : siteSettings.topBarHeight === 'spacious'
+      ? 12
+      : 6;
+
   const navPaddingY =
     siteSettings.navbarPaddingY !== undefined
       ? siteSettings.navbarPaddingY
@@ -172,7 +181,13 @@ export const Header: React.FC = () => {
     <header className="w-full bg-white shadow-xs border-b border-gray-100 sticky top-0 z-40 transition-all duration-200">
       {/* Top Bar with Deep Green Background */}
       {siteSettings.showTopBar !== false && (
-        <div className="bg-[#0f5338] text-white text-xs py-1 sm:py-1.5 px-4 sm:px-8 transition-all">
+        <div
+          className="bg-[#0f5338] text-white text-xs px-4 sm:px-8 transition-all"
+          style={{
+            paddingTop: `${topBarPaddingY}px`,
+            paddingBottom: `${topBarPaddingY}px`,
+          }}
+        >
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
             {/* Left Contact Info */}
             <div className="flex flex-wrap items-center gap-4 sm:gap-6">

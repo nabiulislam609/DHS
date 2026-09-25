@@ -19,6 +19,9 @@ import { ManageNavigation } from './ManageNavigation';
 import { ManageHomepageSections } from './ManageHomepageSections';
 import { ManageHeaderAndTicker } from './ManageHeaderAndTicker';
 import { ManagePerformanceTrends } from './ManagePerformanceTrends';
+import { ManageAchievements } from './ManageAchievements';
+import { ManageAcademicPrograms } from './ManageAcademicPrograms';
+import { ManageStatistics } from './ManageStatistics';
 import { GenericSectionManager } from './GenericSectionManager';
 import { Eye, Bell, ShieldCheck } from 'lucide-react';
 
@@ -43,6 +46,8 @@ export const AdminPanel: React.FC = () => {
         return <ManageNews />;
       case 'events':
         return <ManageEvents />;
+      case 'achievements':
+        return <ManageAchievements />;
       case 'gallery':
         return <ManageGallery />;
       case 'settings':
@@ -63,6 +68,10 @@ export const AdminPanel: React.FC = () => {
         return <ManageStaff />;
       case 'leadership':
         return <ManageLeadership />;
+      case 'programs':
+        return <ManageAcademicPrograms />;
+      case 'statistics':
+        return <ManageStatistics />;
       default:
         return <GenericSectionManager tab={adminTab} />;
     }

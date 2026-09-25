@@ -93,9 +93,15 @@ interface SchoolContextType {
   deleteStaff: (id: string) => void;
 
   students: Student[];
-  addStudent: (student: Omit<Student, 'id'>) => void;
+  deletedStudents: Student[];
+  addStudent: (student: Omit<Student, 'id'> & { id?: string }) => void;
   updateStudent: (id: string, student: Partial<Student>) => void;
-  deleteStudent: (id: string) => void;
+  deleteStudent: (id: string, roll?: string) => void;
+  deleteMultipleStudents: (ids: string[]) => void;
+  removeDuplicateStudents: () => number;
+  restoreStudent: (id: string) => void;
+  permanentlyDeleteStudent: (id: string) => void;
+  emptyDeletedStudents: () => void;
 
   notices: Notice[];
   addNotice: (notice: Omit<Notice, 'id'>) => void;
@@ -146,9 +152,12 @@ interface SchoolContextType {
   updateGalleryAlbum: (id: string, album: Partial<GalleryAlbum>) => void;
   deleteGalleryAlbum: (id: string) => void;
   addImageToAlbum: (albumId: string, imageUrl: string) => void;
+  addImagesToAlbum: (albumId: string, imageUrls: string[]) => void;
+  removeImageFromAlbum: (albumId: string, index: number) => void;
+  setAlbumCoverImage: (albumId: string, imageUrl: string) => void;
 
   admissions: AdmissionApplication[];
-  submitAdmission: (application: Omit<AdmissionApplication, 'id' | 'appliedDate' | 'status'>) => void;
+  submitAdmission: (application: Omit<AdmissionApplication, 'id' | 'appliedDate' | 'status'>) => AdmissionApplication;
   updateAdmissionStatus: (id: string, status: AdmissionApplication['status']) => void;
   deleteAdmission: (id: string) => void;
 
@@ -268,7 +277,37 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [students, setStudents] = useState<Student[]>(() => {
     const saved = localStorage.getItem('dhs_students');
-    return saved ? JSON.parse(saved) : initialStudents;
+    if (saved) {
+      try {
+        const parsed: Student[] = JSON.parse(saved);
+        const normalized = parsed.map((s) => {
+          const updated = { ...s };
+          if (!updated.image) {
+            const initMatch = initialStudents.find(
+              (init) =>
+                init.id === updated.id ||
+                init.roll === updated.roll ||
+                init.name.toLowerCase() === updated.name.toLowerCase()
+            );
+            if (initMatch && initMatch.image) {
+              updated.image = initMatch.image;
+            }
+          }
+          return updated;
+        });
+        const existingIds = new Set(normalized.map((s) => s.id));
+        const missing = initialStudents.filter((s) => !existingIds.has(s.id));
+        return [...normalized, ...missing];
+      } catch {
+        return initialStudents;
+      }
+    }
+    return initialStudents;
+  });
+
+  const [deletedStudents, setDeletedStudents] = useState<Student[]>(() => {
+    const saved = localStorage.getItem('dhs_deleted_students');
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [notices, setNotices] = useState<Notice[]>(() => {
@@ -318,7 +357,23 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [activities, setActivities] = useState<ActivityLog[]>(() => {
     const saved = localStorage.getItem('dhs_activities');
-    return saved ? JSON.parse(saved) : initialActivities;
+    if (saved) {
+      try {
+        const parsed: ActivityLog[] = JSON.parse(saved);
+        const seenIds = new Set<string>();
+        return parsed.map((act, idx) => {
+          let uniqueId = act.id || `act-${Date.now()}-${idx}`;
+          if (seenIds.has(uniqueId)) {
+            uniqueId = `${uniqueId}-${idx}-${Math.random().toString(36).substring(2, 6)}`;
+          }
+          seenIds.add(uniqueId);
+          return { ...act, id: uniqueId };
+        });
+      } catch (e) {
+        console.error('Failed to parse activities from localStorage', e);
+      }
+    }
+    return initialActivities;
   });
 
   const [examResults, setExamResults] = useState<ExamResult[]>(() => {
@@ -326,9 +381,22 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (saved) {
       try {
         const parsed: ExamResult[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map((r) => r.id));
+        const normalized = parsed.map((r) => {
+          const updated = { ...r };
+          if (updated.studentClass === 'Class 10 (১০ম শ্রেণি - বিজ্ঞান)') {
+            updated.studentClass = '১০ম শ্রেণি (বিজ্ঞান বিভাগ)';
+          }
+          if (!updated.studentImage) {
+            const initMatch = initialExamResults.find((init) => init.id === updated.id);
+            if (initMatch && initMatch.studentImage) {
+              updated.studentImage = initMatch.studentImage;
+            }
+          }
+          return updated;
+        });
+        const existingIds = new Set(normalized.map((r) => r.id));
         const missing = initialExamResults.filter((r) => !existingIds.has(r.id));
-        return [...parsed, ...missing];
+        return [...normalized, ...missing];
       } catch {
         return initialExamResults;
       }
@@ -435,6 +503,10 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [students]);
 
   useEffect(() => {
+    localStorage.setItem('dhs_deleted_students', JSON.stringify(deletedStudents));
+  }, [deletedStudents]);
+
+  useEffect(() => {
     localStorage.setItem('dhs_notices', JSON.stringify(notices));
   }, [notices]);
 
@@ -474,9 +546,13 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem('dhs_activities', JSON.stringify(activities));
   }, [activities]);
 
+  const generateUniqueId = (prefix: string) => {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  };
+
   const logActivity = (action: string, type: ActivityLog['type']) => {
     const newAct: ActivityLog = {
-      id: 'act-' + Date.now(),
+      id: generateUniqueId('act'),
       action,
       timestamp: new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' }),
       type,
@@ -495,7 +571,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Teachers CRUD
   const addTeacher = (item: Omit<Teacher, 'id'>) => {
-    const id = 't-' + Date.now();
+    const id = generateUniqueId('t');
     const newT: Teacher = { id, ...item };
     setTeachers((prev) => [...prev, newT]);
     logActivity(`নতুন শিক্ষক "${newT.name}" যোগ করা হয়েছে`, 'teacher');
@@ -514,7 +590,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Staff CRUD
   const addStaff = (item: Omit<Staff, 'id'>) => {
-    const id = 's-' + Date.now();
+    const id = generateUniqueId('s');
     const newS: Staff = { id, ...item };
     setStaff((prev) => [...prev, newS]);
     logActivity(`নতুন কর্মচারী "${newS.name}" যোগ করা হয়েছে`, 'setting');
@@ -531,11 +607,11 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   // Students CRUD
-  const addStudent = (item: Omit<Student, 'id'>) => {
-    const id = 'stu-' + Date.now();
-    const newStu: Student = { id, ...item };
+  const addStudent = (item: Omit<Student, 'id'> & { id?: string }) => {
+    const id = (item.id && item.id.trim()) ? item.id.trim() : generateUniqueId('stu');
+    const newStu: Student = { ...item, id };
     setStudents((prev) => [...prev, newStu]);
-    logActivity(`শিক্ষার্থী "${newStu.name}" তালিকাভুক্ত করা হয়েছে`, 'setting');
+    logActivity(`শিক্ষার্থী "${newStu.name}" (আইডি: ${id}, রোল: ${newStu.roll}) তালিকাভুক্ত করা হয়েছে`, 'setting');
   };
 
   const updateStudent = (id: string, item: Partial<Student>) => {
@@ -543,14 +619,84 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     logActivity(`শিক্ষার্থীর তথ্য আপডেট করা হয়েছে`, 'setting');
   };
 
-  const deleteStudent = (id: string) => {
-    setStudents((prev) => prev.filter((s) => s.id !== id));
-    logActivity(`শিক্ষার্থীর তথ্য মুছে ফেলা হয়েছে`, 'setting');
+  const deleteStudent = (id: string, roll?: string) => {
+    setStudents((prev) => {
+      let target = prev.find((s) => s.id === id);
+      if (!target && roll) {
+        target = prev.find((s) => s.roll === roll);
+      }
+      if (target) {
+        setDeletedStudents((del) => [target!, ...del.filter((d) => d.id !== target!.id)]);
+      }
+      let filtered = prev.filter((s) => s.id && s.id === id ? false : s.id !== id);
+      // Fallback: If nothing was removed (e.g. mismatched/missing ID) and roll is provided, match by roll
+      if (filtered.length === prev.length && roll) {
+        filtered = prev.filter((s) => s.roll !== roll);
+      }
+      return filtered;
+    });
+    logActivity(`শিক্ষার্থীর তথ্য মুছে ফেলা হয়েছে (রিসাইকেল বিনে সংরক্ষিত)`, 'setting');
+  };
+
+  const deleteMultipleStudents = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setStudents((prev) => {
+      const toDelete = prev.filter((s) => idSet.has(s.id));
+      if (toDelete.length > 0) {
+        setDeletedStudents((del) => [...toDelete, ...del.filter((d) => !idSet.has(d.id))]);
+      }
+      return prev.filter((s) => !idSet.has(s.id));
+    });
+    logActivity(`${ids.length} জন শিক্ষার্থীর তথ্য মুছে ফেলা হয়েছে (রিসাইকেল বিনে সংরক্ষিত)`, 'setting');
+  };
+
+  const restoreStudent = (id: string) => {
+    const target = deletedStudents.find((s) => s.id === id);
+    if (!target) return;
+    setDeletedStudents((prev) => prev.filter((s) => s.id !== id));
+    setStudents((prev) => {
+      if (prev.some((s) => s.id === target.id)) return prev;
+      return [...prev, target];
+    });
+    logActivity(`মুছে ফেলা শিক্ষার্থী "${target.name}" সফলভাবে পুনরুদ্ধার করা হয়েছে`, 'setting');
+  };
+
+  const permanentlyDeleteStudent = (id: string) => {
+    setDeletedStudents((prev) => prev.filter((s) => s.id !== id));
+    logActivity('শিক্ষার্থীর তথ্য স্থায়ীভাবে সম্পূর্ণ মুছে ফেলা হয়েছে', 'setting');
+  };
+
+  const emptyDeletedStudents = () => {
+    setDeletedStudents([]);
+    logActivity('রিসাইকেল বিনের সকল শিক্ষার্থী স্থায়ীভাবে মুছে ফেলা হয়েছে', 'setting');
+  };
+
+  const removeDuplicateStudents = (): number => {
+    let removed = 0;
+    setStudents((prev) => {
+      const seen = new Set<string>();
+      const result: Student[] = [];
+      for (const s of prev) {
+        // Unique key based on name + class + phone
+        const key = `${s.name.trim().toLowerCase()}__${(s.class || s.studentClass || '').trim()}__${(s.phone || s.guardianPhone || '').replace(/\D/g, '')}`;
+        if (seen.has(key)) {
+          removed++;
+        } else {
+          seen.add(key);
+          result.push(s);
+        }
+      }
+      return result;
+    });
+    if (removed > 0) {
+      logActivity(`${removed}টি ডুপ্লিকেট শিক্ষার্থী মুছে ফেলা হয়েছে`, 'setting');
+    }
+    return removed;
   };
 
   // Notices CRUD
   const addNotice = (item: Omit<Notice, 'id'>) => {
-    const id = 'not-' + Date.now();
+    const id = generateUniqueId('not');
     const newN: Notice = { id, ...item };
     setNotices((prev) => [newN, ...prev]);
     logActivity(`নতুন নোটিশ "${newN.title}" প্রকাশ করা হয়েছে`, 'notice');
@@ -580,7 +726,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Hero Slides
   const addHeroSlide = (slide: Omit<HeroSlide, 'id'>) => {
-    const id = 'slide-' + Date.now();
+    const id = generateUniqueId('slide');
     setHeroSlides((prev) => [...prev, { id, ...slide }]);
     logActivity(`নতুন হিরো স্লাইড "${slide.title}" যোগ করা হয়েছে`, 'setting');
   };
@@ -603,7 +749,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Navigation Items
   const addNavigationItem = (item: Omit<NavigationItem, 'id'>) => {
-    const id = 'nav-' + Date.now();
+    const id = generateUniqueId('nav');
     setNavigationItems((prev) => [...prev, { id, ...item }]);
     logActivity(`নতুন মেনু আইটেম "${item.label}" যুক্ত করা হয়েছে`, 'setting');
   };
@@ -655,7 +801,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Academic Programs
   const addProgram = (item: Omit<AcademicProgram, 'id'>) => {
-    const id = 'prog-' + Date.now();
+    const id = generateUniqueId('prog');
     setAcademicPrograms((prev) => [...prev, { id, ...item }]);
     logActivity(`নতুন একাডেমিক প্রোগ্রাম "${item.title}" যুক্ত করা হয়েছে`, 'setting');
   };
@@ -672,7 +818,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // News CRUD
   const addNews = (item: Omit<NewsItem, 'id'>) => {
-    const id = 'news-' + Date.now();
+    const id = generateUniqueId('news');
     setNews((prev) => [{ id, ...item }, ...prev]);
     logActivity(`নতুন সংবাদ "${item.title}" প্রকাশিত হয়েছে`, 'notice');
   };
@@ -689,7 +835,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Events CRUD
   const addEvent = (item: Omit<EventItem, 'id'>) => {
-    const id = 'evt-' + Date.now();
+    const id = generateUniqueId('evt');
     setEvents((prev) => [...prev, { id, ...item }]);
     logActivity(`নতুন ইভেন্ট "${item.title}" ক্যালেন্ডারে যুক্ত হয়েছে`, 'event');
   };
@@ -706,7 +852,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Achievements CRUD
   const addAchievement = (item: Omit<AchievementItem, 'id'>) => {
-    const id = 'ach-' + Date.now();
+    const id = generateUniqueId('ach');
     setAchievements((prev) => [...prev, { id, ...item }]);
     logActivity(`নতুন অর্জন "${item.title}" সংরক্ষিত হয়েছে`, 'setting');
   };
@@ -723,7 +869,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Gallery
   const addGalleryAlbum = (item: Omit<GalleryAlbum, 'id'>) => {
-    const id = 'gal-' + Date.now();
+    const id = generateUniqueId('gal');
     setGalleryAlbums((prev) => [...prev, { id, ...item }]);
     logActivity(`নতুন গ্যালারি অ্যালবাম "${item.title}" যোগ করা হয়েছে`, 'setting');
   };
@@ -742,7 +888,8 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setGalleryAlbums((prev) =>
       prev.map((alb) => {
         if (alb.id === albumId) {
-          const updatedImgs = [...(alb.images || []), imageUrl];
+          const current = alb.images || (alb.imageUrl ? [alb.imageUrl] : []);
+          const updatedImgs = [...current, imageUrl];
           return {
             ...alb,
             images: updatedImgs,
@@ -755,9 +902,72 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     logActivity(`অ্যালবামে নতুন ছবি যোগ করা হয়েছে`, 'setting');
   };
 
+  const addImagesToAlbum = (albumId: string, imageUrls: string[]) => {
+    if (!imageUrls || imageUrls.length === 0) return;
+    setGalleryAlbums((prev) =>
+      prev.map((alb) => {
+        if (alb.id === albumId) {
+          const current = alb.images || (alb.imageUrl ? [alb.imageUrl] : []);
+          const updatedImgs = [...current, ...imageUrls];
+          return {
+            ...alb,
+            images: updatedImgs,
+            itemCountText: `${updatedImgs.length} টি ছবি`,
+          };
+        }
+        return alb;
+      })
+    );
+    logActivity(`অ্যালবামে ${imageUrls.length}টি নতুন ছবি যোগ করা হয়েছে`, 'setting');
+  };
+
+  const removeImageFromAlbum = (albumId: string, index: number) => {
+    setGalleryAlbums((prev) =>
+      prev.map((alb) => {
+        if (alb.id === albumId) {
+          const current = alb.images ? [...alb.images] : (alb.imageUrl ? [alb.imageUrl] : []);
+          if (index >= 0 && index < current.length) {
+            const removedUrl = current[index];
+            current.splice(index, 1);
+            const newCover = alb.imageUrl === removedUrl ? (current[0] || '') : alb.imageUrl;
+            return {
+              ...alb,
+              imageUrl: newCover,
+              images: current,
+              itemCountText: `${current.length} টি ছবি`,
+            };
+          }
+        }
+        return alb;
+      })
+    );
+    logActivity(`অ্যালবাম থেকে ছবি মুছে ফেলা হয়েছে`, 'setting');
+  };
+
+  const setAlbumCoverImage = (albumId: string, imageUrl: string) => {
+    setGalleryAlbums((prev) =>
+      prev.map((alb) => {
+        if (alb.id === albumId) {
+          const current = alb.images ? [...alb.images] : (alb.imageUrl ? [alb.imageUrl] : []);
+          if (!current.includes(imageUrl)) {
+            current.unshift(imageUrl);
+          }
+          return {
+            ...alb,
+            imageUrl,
+            images: current,
+            itemCountText: `${current.length} টি ছবি`,
+          };
+        }
+        return alb;
+      })
+    );
+    logActivity(`অ্যালবামের কভার ছবি পরিবর্তন করা হয়েছে`, 'setting');
+  };
+
   // Admissions
-  const submitAdmission = (application: Omit<AdmissionApplication, 'id' | 'appliedDate' | 'status'>) => {
-    const id = 'adm-' + Date.now();
+  const submitAdmission = (application: Omit<AdmissionApplication, 'id' | 'appliedDate' | 'status'>): AdmissionApplication => {
+    const id = generateUniqueId('adm');
     const dateStr = new Date().toISOString().split('T')[0];
     const newApp: AdmissionApplication = {
       id,
@@ -767,6 +977,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     setAdmissions((prev) => [newApp, ...prev]);
     logActivity(`নতুন ভর্তি আবেদন জমা হয়েছে: "${newApp.applicantName}" (${newApp.applyingClass})`, 'admission');
+    return newApp;
   };
 
   const updateAdmissionStatus = (id: string, status: AdmissionApplication['status']) => {
@@ -783,7 +994,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addExamResult = (result: Omit<ExamResult, 'id'>) => {
     const newResult: ExamResult = {
       ...result,
-      id: 'res-' + Date.now(),
+      id: generateUniqueId('res'),
     };
     setExamResults((prev) => [newResult, ...prev]);
     logActivity(`নতুন পরীক্ষার ফলাফল যুক্ত করা হয়েছে: ${newResult.studentName}`, 'setting');
@@ -803,7 +1014,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Messages
   const submitContactMessage = (msg: Omit<ContactMessage, 'id' | 'date' | 'read'>) => {
-    const id = 'msg-' + Date.now();
+    const id = generateUniqueId('msg');
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const newMsg: ContactMessage = {
@@ -829,7 +1040,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addPerformanceTrend = (trend: Omit<PerformanceTrendItem, 'id'>) => {
     const newItem: PerformanceTrendItem = {
       ...trend,
-      id: `trend-${Date.now()}`,
+      id: generateUniqueId('trend'),
     };
     setPerformanceTrends((prev) =>
       [...prev, newItem].sort((a, b) => a.year.localeCompare(b.year))
@@ -913,9 +1124,15 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateStaff,
         deleteStaff,
         students,
+        deletedStudents,
         addStudent,
         updateStudent,
         deleteStudent,
+        deleteMultipleStudents,
+        removeDuplicateStudents,
+        restoreStudent,
+        permanentlyDeleteStudent,
+        emptyDeletedStudents,
         notices,
         addNotice,
         updateNotice,
@@ -957,6 +1174,9 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateGalleryAlbum,
         deleteGalleryAlbum,
         addImageToAlbum,
+        addImagesToAlbum,
+        removeImageFromAlbum,
+        setAlbumCoverImage,
         admissions,
         submitAdmission,
         updateAdmissionStatus,

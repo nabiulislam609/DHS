@@ -22,6 +22,50 @@
   background: #94a3b8;
 }
 
+/* Prominent Custom Scrollbar for Sidebar Navigation */
+.custom-sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #15803d #07261b;
+}
+
+.custom-sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-sidebar-scrollbar::-webkit-scrollbar-track {
+  background: #07261b;
+  border-radius: 9999px;
+  margin: 4px 0;
+}
+
+.custom-sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: #15803d;
+  border-radius: 9999px;
+  border: 1px solid #07261b;
+}
+
+.custom-sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #22c55e;
+}
+
+aside::-webkit-scrollbar,
+aside *::-webkit-scrollbar {
+  width: 6px;
+}
+aside::-webkit-scrollbar-track,
+aside *::-webkit-scrollbar-track {
+  background: #07261b;
+}
+aside::-webkit-scrollbar-thumb,
+aside *::-webkit-scrollbar-thumb {
+  background: #15803d;
+  border-radius: 4px;
+}
+aside::-webkit-scrollbar-thumb:hover,
+aside *::-webkit-scrollbar-thumb:hover {
+  background: #22c55e;
+}
+
 @keyframes marquee {
   0% {
     transform: translateX(0%);
@@ -39,5 +83,55 @@
 
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+/* Print and PDF Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-student-sheet,
+  #printable-student-sheet *,
+  #printable-student-profile,
+  #printable-student-profile *,
+  #printable-single-student-card,
+  #printable-single-student-card *,
+  #printable-admission-card,
+  #printable-admission-card *,
+  #printable-admission-slip,
+  #printable-admission-slip *,
+  #printable-teacher-sheet,
+  #printable-teacher-sheet *,
+  #printable-staff-sheet,
+  #printable-staff-sheet * {
+    visibility: visible;
+  }
+  #printable-student-sheet,
+  #printable-student-profile,
+  #printable-single-student-card,
+  #printable-admission-card,
+  #printable-admission-slip,
+  #printable-teacher-sheet,
+  #printable-staff-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    background: white !important;
+    color: black !important;
+    font-size: 11pt !important;
+    display: block !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Dynamic Full Screen Hero Section */
+#hero {
+  height: calc(100dvh - var(--site-header-height, 140px));
+  min-height: calc(100dvh - var(--site-header-height, 140px));
 }
 

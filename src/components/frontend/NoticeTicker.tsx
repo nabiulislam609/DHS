@@ -13,6 +13,15 @@ export const NoticeTicker: React.FC = () => {
   const speedDuration = siteSettings.noticeTickerSpeed || 60;
   const tickerLabel = siteSettings.noticeTickerLabel || 'সর্বশেষ নোটিশ:';
 
+  const tickerPaddingY =
+    siteSettings.noticeTickerPaddingY !== undefined
+      ? siteSettings.noticeTickerPaddingY
+      : siteSettings.noticeTickerHeight === 'compact'
+      ? 4
+      : siteSettings.noticeTickerHeight === 'spacious'
+      ? 14
+      : 8;
+
   const getBadgeColor = (category: string) => {
     switch (category) {
       case 'জরুরি':
@@ -31,7 +40,11 @@ export const NoticeTicker: React.FC = () => {
   return (
     <div
       id="notice-ticker"
-      className="w-full bg-[#053527] border-b border-[#042b1f] text-white py-2 px-4 sm:px-8 overflow-hidden relative z-20 shadow-xs"
+      className="w-full bg-[#053527] border-b border-[#042b1f] text-white px-4 sm:px-8 overflow-hidden relative z-20 shadow-xs transition-all"
+      style={{
+        paddingTop: `${tickerPaddingY}px`,
+        paddingBottom: `${tickerPaddingY}px`,
+      }}
     >
       <div className="max-w-7xl mx-auto flex items-center gap-3 sm:gap-4">
         {/* Ticker Title Badge - perfectly centered with header container */}

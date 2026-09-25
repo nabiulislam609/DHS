@@ -54,6 +54,12 @@ export const ManageHeaderAndTicker: React.FC = () => {
   const [topBarAdminText, setTopBarAdminText] = useState<string>(
     siteSettings.topBarAdminText || 'Admin'
   );
+  const [topBarHeight, setTopBarHeight] = useState<'compact' | 'normal' | 'spacious' | 'custom'>(
+    siteSettings.topBarHeight || 'normal'
+  );
+  const [topBarPaddingY, setTopBarPaddingY] = useState<number>(
+    siteSettings.topBarPaddingY !== undefined ? siteSettings.topBarPaddingY : 6
+  );
 
   const [navbarHeight, setNavbarHeight] = useState<'compact' | 'normal' | 'spacious' | 'custom'>(
     siteSettings.navbarHeight || 'compact'
@@ -67,6 +73,12 @@ export const ManageHeaderAndTicker: React.FC = () => {
   );
   const [tickerSpeed, setTickerSpeed] = useState<number>(siteSettings.noticeTickerSpeed || 60);
   const [tickerLabel, setTickerLabel] = useState<string>(siteSettings.noticeTickerLabel || 'সর্বশেষ নোটিশ:');
+  const [tickerHeight, setTickerHeight] = useState<'compact' | 'normal' | 'spacious' | 'custom'>(
+    siteSettings.noticeTickerHeight || 'normal'
+  );
+  const [tickerPaddingY, setTickerPaddingY] = useState<number>(
+    siteSettings.noticeTickerPaddingY !== undefined ? siteSettings.noticeTickerPaddingY : 8
+  );
 
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -83,11 +95,15 @@ export const ManageHeaderAndTicker: React.FC = () => {
       topBarInstagramText: topBarInstagramText.trim() || 'Instagram',
       topBarInstagramUrl: topBarInstagramUrl.trim(),
       topBarAdminText: topBarAdminText.trim() || 'Admin',
+      topBarHeight,
+      topBarPaddingY,
       navbarHeight,
       navbarPaddingY,
       showNoticeTicker: tickerVisible,
       noticeTickerSpeed: tickerSpeed,
       noticeTickerLabel: tickerLabel.trim() || 'সর্বশেষ নোটিশ:',
+      noticeTickerHeight: tickerHeight,
+      noticeTickerPaddingY: tickerPaddingY,
     });
 
     if (sectionVisibility.ticker !== tickerVisible) {
@@ -110,11 +126,15 @@ export const ManageHeaderAndTicker: React.FC = () => {
     setTopBarInstagramText('Instagram');
     setTopBarInstagramUrl('https://instagram.com/dadrahighschool');
     setTopBarAdminText('Admin');
+    setTopBarHeight('normal');
+    setTopBarPaddingY(6);
     setNavbarHeight('compact');
     setNavbarPaddingY(10);
     setTickerVisible(true);
     setTickerSpeed(60);
     setTickerLabel('সর্বশেষ নোটিশ:');
+    setTickerHeight('normal');
+    setTickerPaddingY(8);
   };
 
   // Speed descriptions for display
@@ -216,7 +236,13 @@ export const ManageHeaderAndTicker: React.FC = () => {
             )}
           </div>
           {topBarVisible ? (
-            <div className="bg-[#0f5338] text-white text-[11px] py-2 px-4 rounded-xl flex items-center justify-between gap-2 overflow-x-auto shadow-inner transition-all">
+            <div
+              className="bg-[#0f5338] text-white text-[11px] px-4 rounded-xl flex items-center justify-between gap-2 overflow-x-auto shadow-inner transition-all duration-200"
+              style={{
+                paddingTop: `${topBarPaddingY}px`,
+                paddingBottom: `${topBarPaddingY}px`,
+              }}
+            >
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
                   <Phone className="w-3 h-3 text-emerald-300" />
@@ -246,6 +272,102 @@ export const ManageHeaderAndTicker: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Top Bar Height / Size Control - Navbar এর মতো হাইট কম-বেশি করার কন্ট্রোল */}
+        {topBarVisible && (
+          <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-200/80 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-emerald-200/60">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Maximize2 className="w-4 h-4 text-emerald-700" />
+                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    টপ বারের উচ্চতা (Top Bar Height কম / বেশি করা)
+                  </h4>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  ন্যাভবারের মতো টপ বারের উল্লম্ব প্যাডিং ও উচ্চতা পছন্দমতো স্লিম বা বড় করুন
+                </p>
+              </div>
+              <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-lg text-xs font-mono font-bold self-start sm:self-auto border border-emerald-300 shadow-2xs">
+                বর্তমান প্যাডিং: {topBarPaddingY}px
+              </span>
+            </div>
+
+            {/* Preset Height Buttons */}
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-700 mb-1.5">
+                প্রিসেট আকার নির্বাচন করুন:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {[
+                  { id: 'compact', label: 'অতি স্লিম / সংকুচিত', sub: '৩px প্যাডিং', pad: 3 },
+                  { id: 'normal', label: 'স্বাভাবিক / স্ট্যান্ডার্ড', sub: '৬px প্যাডিং', pad: 6 },
+                  { id: 'spacious', label: 'প্রশস্ত / বড়', sub: '১২px প্যাডিং', pad: 12 },
+                  { id: 'custom', label: 'কাস্টম সাইজ', sub: 'স্লাইডার দিয়ে সেট', pad: topBarPaddingY },
+                ].map((preset) => {
+                  const isSelected =
+                    preset.id === 'custom'
+                      ? topBarHeight === 'custom' || (topBarPaddingY !== 3 && topBarPaddingY !== 6 && topBarPaddingY !== 12)
+                      : topBarPaddingY === preset.pad && topBarHeight === preset.id;
+
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setTopBarHeight(preset.id as any);
+                        if (preset.id !== 'custom') {
+                          setTopBarPaddingY(preset.pad);
+                        }
+                      }}
+                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                        isSelected
+                          ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
+                          : 'bg-white border-emerald-200/70 hover:bg-emerald-100/40 text-gray-800'
+                      }`}
+                    >
+                      <p className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                        {preset.label}
+                      </p>
+                      <p className={`text-[10px] mt-0.5 ${isSelected ? 'text-emerald-100' : 'text-gray-500'}`}>
+                        {preset.sub}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Range Slider for Height / Vertical Padding */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-gray-700">উচ্চতা / প্যাডিং স্লাইডার (২px - ২০px):</span>
+                <span className="font-mono font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                  {topBarPaddingY} পিক্সেল
+                </span>
+              </div>
+              <input
+                type="range"
+                min={2}
+                max={20}
+                step={1}
+                value={topBarPaddingY}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  setTopBarPaddingY(val);
+                  setTopBarHeight('custom');
+                }}
+                className="w-full h-2 bg-emerald-100 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+              />
+              <div className="flex justify-between text-[10px] text-gray-500 font-mono">
+                <span>২px (সবচেয়ে স্লিম)</span>
+                <span>৬px (স্ট্যান্ডার্ড)</span>
+                <span>১২px (বড়)</span>
+                <span>২০px (সর্বোচ্চ বড়)</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Top Bar Text Content Editor */}
         {topBarVisible && (
@@ -635,6 +757,102 @@ export const ManageHeaderAndTicker: React.FC = () => {
           </p>
         </div>
 
+        {/* Notice Ticker Height / Size Control - নোটিশ বারের উচ্চতা কম / বেশি করা */}
+        {tickerVisible && (
+          <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-200/80 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-amber-200/60">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Maximize2 className="w-4 h-4 text-amber-700" />
+                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    মুভিং নোটিফিকেশন বারের উচ্চতা (Notice Bar Height কম / বেশি করা)
+                  </h4>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  ন্যাভবারের মতো নোটিশ বারের উল্লম্ব প্যাডিং ও উচ্চতা পছন্দমতো স্লিম বা বড় করুন
+                </p>
+              </div>
+              <span className="bg-amber-100 text-amber-900 px-3 py-1 rounded-lg text-xs font-mono font-bold self-start sm:self-auto border border-amber-300 shadow-2xs">
+                বর্তমান প্যাডিং: {tickerPaddingY}px
+              </span>
+            </div>
+
+            {/* Preset Height Buttons */}
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-700 mb-1.5">
+                প্রিসেট আকার নির্বাচন করুন:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {[
+                  { id: 'compact', label: 'অতি স্লিম / সংকুচিত', sub: '৪px প্যাডিং', pad: 4 },
+                  { id: 'normal', label: 'স্বাভাবিক / স্ট্যান্ডার্ড', sub: '৮px প্যাডিং', pad: 8 },
+                  { id: 'spacious', label: 'প্রশস্ত / বড়', sub: '১৪px প্যাডিং', pad: 14 },
+                  { id: 'custom', label: 'কাস্টম সাইজ', sub: 'স্লাইডার দিয়ে সেট', pad: tickerPaddingY },
+                ].map((preset) => {
+                  const isSelected =
+                    preset.id === 'custom'
+                      ? tickerHeight === 'custom' || (tickerPaddingY !== 4 && tickerPaddingY !== 8 && tickerPaddingY !== 14)
+                      : tickerPaddingY === preset.pad && tickerHeight === preset.id;
+
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setTickerHeight(preset.id as any);
+                        if (preset.id !== 'custom') {
+                          setTickerPaddingY(preset.pad);
+                        }
+                      }}
+                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                        isSelected
+                          ? 'bg-amber-600 text-white border-amber-700 shadow-sm'
+                          : 'bg-white border-amber-200/70 hover:bg-amber-100/40 text-gray-800'
+                      }`}
+                    >
+                      <p className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                        {preset.label}
+                      </p>
+                      <p className={`text-[10px] mt-0.5 ${isSelected ? 'text-amber-100' : 'text-gray-500'}`}>
+                        {preset.sub}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Range Slider for Notice Bar Height */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-gray-700">উচ্চতা / প্যাডিং স্লাইডার (২px - ২৪px):</span>
+                <span className="font-mono font-bold text-amber-900 bg-white px-2 py-0.5 rounded border border-amber-200">
+                  {tickerPaddingY} পিক্সেল
+                </span>
+              </div>
+              <input
+                type="range"
+                min={2}
+                max={24}
+                step={1}
+                value={tickerPaddingY}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  setTickerPaddingY(val);
+                  setTickerHeight('custom');
+                }}
+                className="w-full h-2 bg-amber-100 rounded-lg appearance-none cursor-pointer accent-amber-600"
+              />
+              <div className="flex justify-between text-[10px] text-gray-500 font-mono">
+                <span>২px (সবচেয়ে স্লিম)</span>
+                <span>৮px (স্ট্যান্ডার্ড)</span>
+                <span>১৪px (বড়)</span>
+                <span>২৪px (সর্বোচ্চ বড়)</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Live Moving Ticker Preview */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -650,7 +868,13 @@ export const ManageHeaderAndTicker: React.FC = () => {
           </div>
 
           {tickerVisible ? (
-            <div className="w-full bg-[#053527] border border-[#042b1f] text-white py-2 px-3 rounded-xl overflow-hidden shadow-inner">
+            <div
+              className="w-full bg-[#053527] border border-[#042b1f] text-white px-3 rounded-xl overflow-hidden shadow-inner transition-all duration-200"
+              style={{
+                paddingTop: `${tickerPaddingY}px`,
+                paddingBottom: `${tickerPaddingY}px`,
+              }}
+            >
               <div className="flex items-center gap-2.5">
                 <div className="inline-flex items-center gap-1.5 bg-[#0f4d3a] text-amber-300 border border-[#1b6a52] px-3 py-1 rounded-full text-xs font-bold shrink-0">
                   <Bell className="w-3.5 h-3.5 text-amber-300 shrink-0" />

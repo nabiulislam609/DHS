@@ -3,12 +3,103 @@ import { useSchool } from '../../context/SchoolContext';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 
 export const HeroSlider: React.FC = () => {
-  const { heroSlides, setIsAdmissionModalOpen } = useSchool();
+  const { heroSlides, setIsAdmissionModalOpen, siteSettings, sectionVisibility } = useSchool();
 
   const activeSlides = heroSlides.filter((s) => s.active);
   const slides = activeSlides.length > 0 ? activeSlides : heroSlides;
 
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState<number>(140);
+
+  // Dynamically calculate and track the exact height of the top header area (Navbar, TopBar, Ticker)
+  useEffect(() => {
+    const measureHeader = () => {
+      const topArea = document.getElementById('top-header-area');
+      if (topArea) {
+        const height = topArea.getBoundingClientRect().height;
+        if (height > 0) {
+          const rounded = Math.round(height);
+          setHeaderHeight(rounded);
+          document.documentElement.style.setProperty('--site-header-height', `${rounded}px`);
+          return;
+        }
+      }
+
+      // Accurate Fallback calculation from siteSettings & sectionVisibility
+      let calcH = 0;
+      if (siteSettings.showTopBar !== false) {
+        const padY =
+          siteSettings.topBarPaddingY !== undefined
+            ? siteSettings.topBarPaddingY
+            : siteSettings.topBarHeight === 'compact'
+            ? 3
+            : siteSettings.topBarHeight === 'spacious'
+            ? 12
+            : 6;
+        calcH += 24 + padY * 2;
+      }
+
+      const navPadY =
+        siteSettings.navbarPaddingY !== undefined
+          ? siteSettings.navbarPaddingY
+          : siteSettings.navbarHeight === 'compact'
+          ? 6
+          : siteSettings.navbarHeight === 'spacious'
+          ? 18
+          : 10;
+      calcH += 50 + navPadY * 2;
+
+      if (sectionVisibility.ticker && siteSettings.showNoticeTicker !== false) {
+        const tickPadY =
+          siteSettings.noticeTickerPaddingY !== undefined
+            ? siteSettings.noticeTickerPaddingY
+            : siteSettings.noticeTickerHeight === 'compact'
+            ? 4
+            : siteSettings.noticeTickerHeight === 'spacious'
+            ? 14
+            : 8;
+        calcH += 32 + tickPadY * 2;
+      }
+
+      const finalH = calcH || 140;
+      setHeaderHeight(finalH);
+      document.documentElement.style.setProperty('--site-header-height', `${finalH}px`);
+    };
+
+    measureHeader();
+
+    const rafId = requestAnimationFrame(measureHeader);
+    const timer = setTimeout(measureHeader, 80);
+
+    // Instant observation of any resize/change inside top-header-area
+    const topArea = document.getElementById('top-header-area');
+    let observer: ResizeObserver | null = null;
+    if (topArea && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => {
+        measureHeader();
+      });
+      observer.observe(topArea);
+    }
+
+    window.addEventListener('resize', measureHeader);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timer);
+      observer?.disconnect();
+      window.removeEventListener('resize', measureHeader);
+    };
+  }, [
+    siteSettings.showTopBar,
+    siteSettings.topBarHeight,
+    siteSettings.topBarPaddingY,
+    siteSettings.navbarHeight,
+    siteSettings.navbarPaddingY,
+    siteSettings.showNoticeTicker,
+    siteSettings.noticeTickerHeight,
+    siteSettings.noticeTickerPaddingY,
+    sectionVisibility.ticker,
+  ]);
 
   useEffect(() => {
     if (slides.length <= 1) return;
@@ -51,7 +142,14 @@ export const HeroSlider: React.FC = () => {
   };
 
   return (
-    <section id="hero" className="relative w-full h-[520px] sm:h-[600px] lg:h-[680px] xl:h-[720px] overflow-hidden bg-gray-900 scroll-mt-20">
+    <section
+      id="hero"
+      className="relative w-full overflow-hidden bg-gray-900 scroll-mt-20 flex flex-col justify-center transition-all duration-200"
+      style={{
+        height: `calc(100dvh - ${headerHeight}px)`,
+        minHeight: `calc(100dvh - ${headerHeight}px)`,
+      }}
+    >
       {/* Background Image with Dark Greenish Overlay */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-1000 transform scale-105"

@@ -35,6 +35,12 @@ export interface Student {
   subjects?: string[];
   guardianPhone?: string;
   image?: string;
+  fatherName?: string;
+  motherName?: string;
+  dateOfBirth?: string;
+  gender?: 'ছাত্র' | 'ছাত্রী';
+  previousSchool?: string;
+  presentAddress?: string;
 }
 
 export interface Notice {
@@ -80,6 +86,7 @@ export interface NewsItem {
   summary: string;
   content: string;
   imageUrl?: string;
+  images?: string[];
   featured?: boolean;
 }
 
@@ -91,6 +98,8 @@ export interface EventItem {
   location: string;
   description: string;
   category?: string;
+  imageUrl?: string;
+  images?: string[];
 }
 
 export interface AchievementItem {
@@ -101,6 +110,8 @@ export interface AchievementItem {
   subtitle: string;
   authorOrTeam?: string;
   iconType: 'academic' | 'olympiad' | 'sports' | 'scholarship' | 'tech' | string;
+  imageUrl?: string;
+  images?: string[];
 }
 
 export interface GalleryAlbum {
@@ -115,11 +126,16 @@ export interface GalleryAlbum {
 export interface AdmissionApplication {
   id: string;
   applicantName: string;
+  image?: string;
   fatherName: string;
   motherName: string;
   dateOfBirth: string;
   gender: 'ছাত্র' | 'ছাত্রী';
   applyingClass: string;
+  section?: string;
+  group?: string;
+  additionalSubject?: string;
+  subjects?: string[];
   previousSchool: string;
   gpaOrGrade: string;
   phone: string;
@@ -127,6 +143,7 @@ export interface AdmissionApplication {
   presentAddress: string;
   appliedDate: string;
   status: 'অপেক্ষমাণ' | 'অনুমোদিত' | 'বাতিল';
+  roll?: string;
 }
 
 export interface ContactMessage {
@@ -158,6 +175,14 @@ export interface NavigationItem {
   iconName?: string;
   order: number;
   visible: boolean;
+}
+
+export interface CustomStatItem {
+  id: string;
+  label: string;
+  value: string;
+  description?: string;
+  icon?: string;
 }
 
 export interface SiteSettings {
@@ -198,6 +223,7 @@ export interface SiteSettings {
   gpa5Count: string;
   totalClassrooms: string;
   totalAwards: string;
+  customStats?: CustomStatItem[];
 
   // Header & Top Bar Settings
   showTopBar?: boolean;
@@ -211,6 +237,8 @@ export interface SiteSettings {
   topBarInstagramText?: string;
   topBarInstagramUrl?: string;
   topBarAdminText?: string;
+  topBarHeight?: 'compact' | 'normal' | 'spacious' | 'custom';
+  topBarPaddingY?: number; // in pixels (e.g. 2 to 24)
   navbarHeight?: 'compact' | 'normal' | 'spacious' | 'custom';
   navbarPaddingY?: number; // in pixels (e.g. 6 to 24)
 
@@ -218,6 +246,8 @@ export interface SiteSettings {
   showNoticeTicker?: boolean;
   noticeTickerSpeed?: number; // in seconds (e.g. 15 to 120, default 60)
   noticeTickerLabel?: string;
+  noticeTickerHeight?: 'compact' | 'normal' | 'spacious' | 'custom';
+  noticeTickerPaddingY?: number; // in pixels (e.g. 2 to 24, default 8)
 }
 
 export interface ActivityLog {
@@ -238,6 +268,7 @@ export interface ExamResult {
   id: string;
   studentId: string;
   studentName: string;
+  studentImage?: string;
   roll: string;
   studentClass: string;
   section: string;

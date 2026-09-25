@@ -193,9 +193,9 @@ export const AdminDashboard: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {activities.map((act) => (
+              {activities.map((act, index) => (
                 <div
-                  key={act.id}
+                  key={`${act.id || 'act'}-${index}`}
                   className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-gray-50 hover:bg-gray-100/80 transition text-xs"
                 >
                   <div className="flex items-center gap-2.5">

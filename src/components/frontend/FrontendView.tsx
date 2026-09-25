@@ -23,8 +23,10 @@ export const FrontendView: React.FC = () => {
 
   return (
     <div id="home" className="min-h-screen bg-[#fafaf9] text-gray-800 flex flex-col antialiased selection:bg-emerald-200 selection:text-emerald-900 scroll-mt-0">
-      <Header />
-      {sectionVisibility.ticker && siteSettings.showNoticeTicker !== false && <NoticeTicker />}
+      <div id="top-header-area" className="w-full shrink-0">
+        <Header />
+        {sectionVisibility.ticker && siteSettings.showNoticeTicker !== false && <NoticeTicker />}
+      </div>
       {sectionVisibility.hero && <HeroSlider />}
       {sectionVisibility.quick_actions && <QuickActions />}
       {sectionVisibility.notices && <NoticeBoard />}
