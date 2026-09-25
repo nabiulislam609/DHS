@@ -3,16 +3,51 @@ import { useSchool } from '../../context/SchoolContext';
 import { GraduationCap, MapPin, Phone, Mail, Heart, LogIn } from 'lucide-react';
 
 export const Footer: React.FC = () => {
-  const { siteSettings, setViewMode, setCurrentFrontendPage } = useSchool();
+  const { siteSettings, setViewMode, setCurrentFrontendPage, currentFrontendPage } = useSchool();
 
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  const navigateToTeachers = () => {
+    setCurrentFrontendPage('teachers');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateToStaff = () => {
+    setCurrentFrontendPage('staff');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const navigateToNotices = () => {
     setCurrentFrontendPage('notices');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const scrollTo = (id: string) => {
+    if (id === 'teachers') {
+      navigateToTeachers();
+      return;
+    }
+    if (id === 'staff') {
+      navigateToStaff();
+      return;
+    }
+    if (id === 'hero' || id === 'home') {
+      if (currentFrontendPage !== 'home') {
+        setCurrentFrontendPage('home');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (currentFrontendPage !== 'home') {
+      setCurrentFrontendPage('home');
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      return;
+    }
+
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -150,7 +185,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2 text-xs text-gray-400">
               <li><button onClick={() => scrollTo('hero')} className="hover:text-amber-300 transition cursor-pointer">হোম</button></li>
               <li><button onClick={() => scrollTo('about')} className="hover:text-amber-300 transition cursor-pointer">পরিচিতি</button></li>
-              <li><button onClick={() => scrollTo('teachers')} className="hover:text-amber-300 transition cursor-pointer">শিক্ষক</button></li>
+              <li><button onClick={navigateToTeachers} className="hover:text-amber-300 transition cursor-pointer">শিক্ষক</button></li>
               <li><button onClick={() => scrollTo('notices')} className="hover:text-amber-300 transition cursor-pointer">নোটিশ</button></li>
               <li><button onClick={() => scrollTo('news')} className="hover:text-amber-300 transition cursor-pointer">সংবাদ</button></li>
               <li><button onClick={() => scrollTo('events')} className="hover:text-amber-300 transition cursor-pointer">ইভেন্ট</button></li>

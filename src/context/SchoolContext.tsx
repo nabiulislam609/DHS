@@ -323,7 +323,17 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [examResults, setExamResults] = useState<ExamResult[]>(() => {
     const saved = localStorage.getItem('dhs_exam_results');
-    return saved ? JSON.parse(saved) : initialExamResults;
+    if (saved) {
+      try {
+        const parsed: ExamResult[] = JSON.parse(saved);
+        const existingIds = new Set(parsed.map((r) => r.id));
+        const missing = initialExamResults.filter((r) => !existingIds.has(r.id));
+        return [...parsed, ...missing];
+      } catch {
+        return initialExamResults;
+      }
+    }
+    return initialExamResults;
   });
 
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => {

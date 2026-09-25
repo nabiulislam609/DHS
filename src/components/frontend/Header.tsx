@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useSchool } from '../../context/SchoolContext';
 import { NavigationItem } from '../../types';
 import {
@@ -28,6 +28,39 @@ export const Header: React.FC = () => {
   const [aboutDropdownOpen, setAboutDropdownOpen] = useState(false);
   const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+
+  const aboutDropdownRef = useRef<HTMLDivElement>(null);
+  const moreDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking anywhere outside on the website or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (aboutDropdownRef.current && !aboutDropdownRef.current.contains(target)) {
+        setAboutDropdownOpen(false);
+      }
+      if (moreDropdownRef.current && !moreDropdownRef.current.contains(target)) {
+        setMoreDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setAboutDropdownOpen(false);
+        setMoreDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Strictly respect navigationItems order and visibility configured in backend
   const processedNavItems = useMemo(() => {
@@ -236,17 +269,24 @@ export const Header: React.FC = () => {
             const isAbout = item.label === 'পরিচিতি' || item.url === '#about';
             if (isAbout) {
               return (
-                <div className="relative" key={item.id}>
+                <div className="relative" key={item.id} ref={aboutDropdownRef}>
                   <button
-                    onClick={() => setAboutDropdownOpen(!aboutDropdownOpen)}
-                    className="flex items-center gap-1 hover:text-emerald-700 transition cursor-pointer"
+                    onClick={() => {
+                      setAboutDropdownOpen((prev) => {
+                        if (!prev) setMoreDropdownOpen(false);
+                        return !prev;
+                      });
+                    }}
+                    className={`flex items-center gap-1 hover:text-emerald-700 transition cursor-pointer ${
+                      aboutDropdownOpen ? 'text-emerald-700 font-semibold' : ''
+                    }`}
                   >
                     <span>পরিচিতি</span>
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${aboutDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {aboutDropdownOpen && (
                     <div
-                      className="absolute top-full mt-2 w-48 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50"
+                      className="absolute top-full mt-2 w-48 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50 animate-fadeIn"
                       onMouseLeave={() => setAboutDropdownOpen(false)}
                     >
                       <button
@@ -254,7 +294,7 @@ export const Header: React.FC = () => {
                           scrollToSection('about');
                           setAboutDropdownOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
+                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs transition cursor-pointer"
                       >
                         বিদ্যালয় পরিচিতি
                       </button>
@@ -263,7 +303,7 @@ export const Header: React.FC = () => {
                           navigateToTeachers();
                           setAboutDropdownOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
+                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs transition cursor-pointer"
                       >
                         শিক্ষক মণ্ডলী
                       </button>
@@ -272,7 +312,7 @@ export const Header: React.FC = () => {
                           navigateToStaff();
                           setAboutDropdownOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
+                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs transition cursor-pointer"
                       >
                         কর্মকর্তা ও কর্মচারী
                       </button>
@@ -288,6 +328,8 @@ export const Header: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => {
+                  setAboutDropdownOpen(false);
+                  setMoreDropdownOpen(false);
                   if (
                     item.label === 'হোম' ||
                     item.url === '#home' ||
@@ -318,36 +360,37 @@ export const Header: React.FC = () => {
           })}
 
           {/* More Dropdown */}
-          <div className="relative">
+          <div className="relative" ref={moreDropdownRef}>
             <button
-              onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
-              className="flex items-center gap-1 hover:text-emerald-700 transition cursor-pointer"
+              onClick={() => {
+                setMoreDropdownOpen((prev) => {
+                  if (!prev) setAboutDropdownOpen(false);
+                  return !prev;
+                });
+              }}
+              className={`flex items-center gap-1 hover:text-emerald-700 transition cursor-pointer ${
+                moreDropdownOpen ? 'text-emerald-700 font-semibold' : ''
+              }`}
             >
               <span>আরও</span>
-              <ChevronDown className="w-3.5 h-3.5" />
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${moreDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             {moreDropdownOpen && (
               <div
-                className="absolute top-full mt-2 w-48 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50"
+                className="absolute top-full mt-2 w-48 bg-white border border-gray-100 rounded-lg shadow-lg py-1 z-50 animate-fadeIn"
                 onMouseLeave={() => setMoreDropdownOpen(false)}
               >
                 <button
                   onClick={() => { scrollToSection('leadership'); setMoreDropdownOpen(false); }}
-                  className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
+                  className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs transition cursor-pointer"
                 >
                   নেতৃত্বের বার্তা
                 </button>
                 <button
                   onClick={() => { scrollToSection('achievements'); setMoreDropdownOpen(false); }}
-                  className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
+                  className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs transition cursor-pointer"
                 >
                   আমাদের অর্জন
-                </button>
-                <button
-                  onClick={() => { scrollToSection('contact'); setMoreDropdownOpen(false); }}
-                  className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-gray-700 text-xs"
-                >
-                  যোগাযোগ
                 </button>
               </div>
             )}
@@ -355,7 +398,11 @@ export const Header: React.FC = () => {
 
           {/* Admission Apply Button */}
           <button
-            onClick={() => setIsAdmissionModalOpen(true)}
+            onClick={() => {
+              setAboutDropdownOpen(false);
+              setMoreDropdownOpen(false);
+              setIsAdmissionModalOpen(true);
+            }}
             className="bg-[#15803d] hover:bg-[#166534] text-white px-3.5 py-1.5 rounded-lg font-semibold shadow-xs hover:shadow transition cursor-pointer text-xs sm:text-sm"
           >
             ভর্তি আবেদন

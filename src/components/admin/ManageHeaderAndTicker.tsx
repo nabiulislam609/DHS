@@ -127,7 +127,7 @@ export const ManageHeaderAndTicker: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="p-6 sm:p-8 space-y-6 w-full">
       {/* Top Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
         <div>

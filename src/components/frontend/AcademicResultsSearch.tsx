@@ -85,116 +85,204 @@ const translateStudentName = (name: string): string => {
   return map[name] || name;
 };
 
+// Available Class Options for Selection
+export const SEARCH_CLASS_OPTIONS = [
+  { value: '', label: '-- শ্রেণি নির্বাচন করুন (বাধ্যতামূলক) --' },
+  { value: '১০ম শ্রেণি (বিজ্ঞান)', label: '১০ম শ্রেণি (বিজ্ঞান বিভাগ)' },
+  { value: '১০ম শ্রেণি (মানবিক)', label: '১০ম শ্রেণি (মানবিক বিভাগ)' },
+  { value: '১০ম শ্রেণি (ব্যবসায় শিক্ষা)', label: '১০ম শ্রেণি (ব্যবসায় শিক্ষা বিভাগ)' },
+  { value: '৯ম শ্রেণি (বিজ্ঞান)', label: '৯ম শ্রেণি (বিজ্ঞান বিভাগ)' },
+  { value: '৯ম শ্রেণি (মানবিক)', label: '৯ম শ্রেণি (মানবিক বিভাগ)' },
+  { value: '৯ম শ্রেণি (ব্যবসায় শিক্ষা)', label: '৯ম শ্রেণি (ব্যবসায় শিক্ষা বিভাগ)' },
+  { value: '৮ম শ্রেণি', label: '৮ম শ্রেণি' },
+  { value: '৭ম শ্রেণি', label: '৭ম শ্রেণি' },
+  { value: '৬ষ্ঠ শ্রেণি', label: '৬ষ্ঠ শ্রেণি' },
+];
+
+// Available Exam Terms for Selection
+export const SEARCH_TERM_OPTIONS = [
+  { value: '', label: '-- পরীক্ষার নাম / টার্ম নির্বাচন করুন (বাধ্যতামূলক) --' },
+  { value: 'Pre-Test Examination (2026)', label: 'প্রাক-নির্বাচনী পরীক্ষা (Pre-Test) ২০২৬' },
+  { value: 'Test Examination / নির্বাচনী পরীক্ষা (2026)', label: 'নির্বাচনী পরীক্ষা (Test Examination) ২০২৬' },
+  { value: '1st Term Examination / ১ম সাময়িক পরীক্ষা (2026)', label: '১ম সাময়িক পরীক্ষা (1st Term) ২০২৬' },
+  { value: '2nd Term Examination / ২য় সাময়িক পরীক্ষা (2026)', label: '২য় সাময়িক পরীক্ষা (2nd Term) ২০২৬' },
+  { value: 'Half-Yearly Examination / অর্ধবার্ষিক পরীক্ষা (2026)', label: 'অর্ধবার্ষিক পরীক্ষা (Half-Yearly) ২০২৬' },
+  { value: 'Annual Examination / বার্ষিক পরীক্ষা (2026)', label: 'বার্ষিক পরীক্ষা (Annual Examination) ২০২৬' },
+  { value: 'Model Test Examination (2026)', label: 'মডেল টেস্ট পরীক্ষা ২০২৬' },
+  { value: 'Monthly Class Test / মাসিক পরীক্ষা (2026)', label: 'মাসিক ক্লাস টেস্ট ২০২৬' },
+  { value: 'Special Assessment / বিশেষ মূল্যায়ন (2026)', label: 'বিশেষ মূল্যায়ন ২০২৬' },
+];
+
+/**
+ * Normalizes class strings to determine grade number and group/stream
+ */
+export const parseClassDetails = (cls: string): { grade: string; group: string } => {
+  const normalized = cls.toLowerCase();
+
+  let grade = '';
+  if (normalized.includes('10') || normalized.includes('১০ম') || normalized.includes('১০')) grade = '10';
+  else if (normalized.includes('9') || normalized.includes('৯ম') || normalized.includes('৯')) grade = '9';
+  else if (normalized.includes('8') || normalized.includes('৮ম') || normalized.includes('৮')) grade = '8';
+  else if (normalized.includes('7') || normalized.includes('৭ম') || normalized.includes('৭')) grade = '7';
+  else if (normalized.includes('6') || normalized.includes('৬ষ্ঠ') || normalized.includes('৬')) grade = '6';
+
+  let group = '';
+  if (normalized.includes('বিজ্ঞান') || normalized.includes('science')) group = 'science';
+  else if (normalized.includes('মানবিক') || normalized.includes('humanities') || normalized.includes('arts')) group = 'humanities';
+  else if (normalized.includes('ব্যবসায়') || normalized.includes('business') || normalized.includes('commerce')) group = 'commerce';
+
+  return { grade, group };
+};
+
+/**
+ * Strict class comparison:
+ * - Grade MUST match exactly (Class 10 cannot match Class 6 or 8 or 9)
+ * - If group is specified (science, humanities, commerce), group MUST match strictly
+ */
+export const isClassMatchStrict = (recordClass: string, selectedClass: string): boolean => {
+  if (!selectedClass || selectedClass.trim() === '' || selectedClass.startsWith('--')) {
+    return false;
+  }
+  const r = parseClassDetails(recordClass);
+  const s = parseClassDetails(selectedClass);
+
+  if (!r.grade || !s.grade) {
+    return recordClass.trim().toLowerCase() === selectedClass.trim().toLowerCase();
+  }
+
+  // Grade must match exactly
+  if (r.grade !== s.grade) {
+    return false;
+  }
+
+  // If selected specifies a group (e.g. Science or Humanities), record must match that group
+  if (s.group && r.group && s.group !== r.group) {
+    return false;
+  }
+
+  // If selected requires a specific group but record has no group
+  if (s.group && !r.group) {
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Normalizes examination term to canonical key
+ */
+export const getTermCanonicalKey = (term: string): string => {
+  const lower = term.toLowerCase();
+  if (lower.includes('pre-test') || lower.includes('প্রি-টেস্ট') || lower.includes('প্রাক-নির্বাচনী')) return 'pre-test';
+  if (lower.includes('test') || lower.includes('নির্বাচনী')) return 'test';
+  if (lower.includes('1st term') || lower.includes('১ম সাময়িক') || lower.includes('প্রথম সাময়িক')) return '1st-term';
+  if (lower.includes('2nd term') || lower.includes('২য় সাময়িক') || lower.includes('দ্বিতীয় সাময়িক')) return '2nd-term';
+  if (lower.includes('annual') || lower.includes('বার্ষিক')) return 'annual';
+  if (lower.includes('half-yearly') || lower.includes('অর্ধবার্ষিক') || lower.includes('অর্ধ-বার্ষিক')) return 'half-yearly';
+  if (lower.includes('model test') || lower.includes('মডেল টেস্ট')) return 'model-test';
+  if (lower.includes('monthly') || lower.includes('মাসিক')) return 'monthly';
+  if (lower.includes('special') || lower.includes('বিশেষ')) return 'special';
+  return lower.trim();
+};
+
+/**
+ * Strict exam term matching
+ */
+export const isTermMatchStrict = (recordTerm: string, selectedTerm: string): boolean => {
+  if (!selectedTerm || selectedTerm.trim() === '' || selectedTerm.startsWith('--')) {
+    return false;
+  }
+  const rKey = getTermCanonicalKey(recordTerm);
+  const sKey = getTermCanonicalKey(selectedTerm);
+  return rKey === sKey;
+};
+
 export const AcademicResultsSearch: React.FC = () => {
   const { examResults } = useSchool();
   const [searchRoll, setSearchRoll] = useState('');
-  const [selectedClass, setSelectedClass] = useState('সকল শ্রেণি (All Classes)');
-  const [selectedTerm, setSelectedTerm] = useState('সকল পরীক্ষা (All Available Terms)');
+  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedTerm, setSelectedTerm] = useState('');
+  const [validationErrors, setValidationErrors] = useState<{
+    roll?: string;
+    studentClass?: string;
+    examTerm?: string;
+  }>({});
   const [searchedResult, setSearchedResult] = useState<ExamResult | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [lastSearchedCriteria, setLastSearchedCriteria] = useState<{
+    roll: string;
+    studentClass: string;
+    examTerm: string;
+  } | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const marksheetRef = useRef<HTMLDivElement>(null);
 
-  // Exact Examination Terms from the marked modal
-  const termOptions = [
-    'সকল পরীক্ষা (All Available Terms)',
-    'Pre-Test Examination (2026)',
-    'Test Examination / নির্বাচনী পরীক্ষা (2026)',
-    '1st Term Examination / ১ম সাময়িক পরীক্ষা (2026)',
-    '2nd Term Examination / ২য় সাময়িক পরীক্ষা (2026)',
-    'Annual Examination / বার্ষিক পরীক্ষা (2026)',
-    'Half-Yearly Examination / অর্ধবার্ষিক পরীক্ষা (2026)',
-    'Model Test Examination (2026)',
-    'Monthly Class Test / মাসিক পরীক্ষা (2026)',
-    'Special Assessment / বিশেষ মূল্যায়ন (2026)',
-  ];
-
-  // Exact Classes from the marked modal
-  const classOptions = [
-    'সকল শ্রেণি (All Classes)',
-    '১০ম শ্রেণি (বিজ্ঞান)',
-    '১০ম শ্রেণি (মানবিক)',
-    '১০ম শ্রেণি (ব্যবসায় শিক্ষা)',
-    '১০ম শ্রেণি',
-    '৯ম শ্রেণি (বিজ্ঞান)',
-    '৯ম শ্রেণি (মানবিক)',
-    '৯ম শ্রেণি (ব্যবসায় শিক্ষা)',
-    '৯ম শ্রেণি',
-    '৮ম শ্রেণি',
-    '৭ম শ্রেণি',
-    '৬ষ্ঠ শ্রেণি',
-    'Class 10 (১০ম শ্রেণি - বিজ্ঞান)',
-    'Class 10 (১০ম শ্রেণি - মানবিক)',
-    'Class 10 (১০ম শ্রেণি - ব্যবসায় শিক্ষা)',
-    'Class 9 (৯ম শ্রেণি - বিজ্ঞান)',
-    'Class 9 (৯ম শ্রেণি - মানবিক)',
-    'Class 9 (৯ম শ্রেণি - ব্যবসায় শিক্ষা)',
-    'Class 8 (৮ম শ্রেণি)',
-    'Class 7 (৭ম শ্রেণি)',
-    'Class 6 (৬ষ্ঠ শ্রেণি)',
-    'Class 10',
-    'Class 9',
-    'Class 8',
-    'Class 7',
-    'Class 6',
-  ];
-
-  const handleSearch = (rollOverride?: string) => {
+  const handleSearch = (rollOverride?: string, classOverride?: string, termOverride?: string) => {
     const rawRoll = (rollOverride !== undefined ? rollOverride : searchRoll).trim();
-    setHasSearched(true);
+    const rawClass = (classOverride !== undefined ? classOverride : selectedClass).trim();
+    const rawTerm = (termOverride !== undefined ? termOverride : selectedTerm).trim();
+
+    // Data Validation Checks
+    const errors: { roll?: string; studentClass?: string; examTerm?: string } = {};
 
     if (!rawRoll) {
+      errors.roll = 'শ্রেণির রোল নম্বর প্রদান করা বাধ্যতামূলক।';
+    }
+    if (!rawClass || rawClass === '') {
+      errors.studentClass = 'অনুগ্রহ করে শ্রেণি নির্বাচন করুন।';
+    }
+    if (!rawTerm || rawTerm === '') {
+      errors.examTerm = 'অনুগ্রহ করে পরীক্ষার নাম নির্বাচন করুন।';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       setSearchedResult(null);
+      setHasSearched(false);
       return;
     }
+
+    // Clear validation errors and record search state
+    setValidationErrors({});
+    setHasSearched(true);
+    setLastSearchedCriteria({
+      roll: rawRoll,
+      studentClass: rawClass,
+      examTerm: rawTerm,
+    });
 
     const engRoll = toEnglishDigits(rawRoll).toLowerCase();
     const origRoll = rawRoll.toLowerCase();
 
-    const isAllTerms =
-      selectedTerm === 'সকল পরীক্ষা (All Available Terms)' ||
-      selectedTerm === 'all' ||
-      selectedTerm === 'সকল পরীক্ষা';
+    // STRICT MATCHING: Roll + Class + Term MUST ALL MATCH!
+    const match = examResults.find((r) => {
+      // 1. Roll Match (Bengali and English digit normalization)
+      const rRollEng = toEnglishDigits(r.roll).trim().toLowerCase();
+      const rRollOrig = r.roll.trim().toLowerCase();
+      const matchRoll = rRollEng === engRoll || rRollOrig === origRoll;
+      if (!matchRoll) return false;
 
-    const isAllClasses =
-      selectedClass === 'সকল শ্রেণি (All Classes)' ||
-      selectedClass === 'all' ||
-      selectedClass === 'সকল শ্রেণি';
+      // 2. Class Match (Strict grade level and group/stream verification)
+      const matchClass = isClassMatchStrict(r.studentClass, rawClass);
+      if (!matchClass) return false;
 
-    // 1st Priority: Match roll + class + term
-    let match = examResults.find((r) => {
-      const rRoll = r.roll.toLowerCase();
-      const matchRoll = rRoll === engRoll || rRoll === origRoll;
+      // 3. Exam Term Match (Strict examination term verification)
+      const matchTerm = isTermMatchStrict(r.examTerm, rawTerm);
+      if (!matchTerm) return false;
 
-      const matchTerm =
-        isAllTerms ||
-        r.examTerm === selectedTerm ||
-        r.examTerm.toLowerCase().includes(selectedTerm.toLowerCase()) ||
-        selectedTerm.toLowerCase().includes(r.examTerm.toLowerCase());
-
-      const matchClass =
-        isAllClasses ||
-        r.studentClass === selectedClass ||
-        r.studentClass.toLowerCase().includes(selectedClass.toLowerCase()) ||
-        selectedClass.toLowerCase().includes(r.studentClass.toLowerCase());
-
-      return matchRoll && matchTerm && matchClass;
+      return true;
     });
 
-    // 2nd Priority: If not found with filters, match by roll directly so student finds their result smoothly
-    if (!match) {
-      match = examResults.find((r) => {
-        const rRoll = r.roll.toLowerCase();
-        return rRoll === engRoll || rRoll === origRoll;
-      });
-    }
-
+    // ABSOLUTELY NO FALLBACK: If roll, class, or exam does not match, return null
     setSearchedResult(match || null);
   };
 
-  const selectDemoRecord = (roll: string) => {
+  const selectDemoRecord = (roll: string, cls: string, term: string) => {
     setSearchRoll(roll);
-    handleSearch(roll);
+    setSelectedClass(cls);
+    setSelectedTerm(term);
+    setValidationErrors({});
+    handleSearch(roll, cls, term);
   };
 
   const handlePrint = () => {
@@ -408,69 +496,129 @@ export const AcademicResultsSearch: React.FC = () => {
             <span>শিক্ষার্থীর পরীক্ষার ফলাফল অনুসন্ধান করুন</span>
           </div>
 
+          {/* Validation Alert Banner if inputs are incomplete */}
+          {Object.keys(validationErrors).length > 0 && (
+            <div className="bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl p-4 text-xs sm:text-sm flex items-start gap-3 animate-shake">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold block">অনুগ্রহ করে প্রয়োজনীয় তথ্যগুলো সঠিকভাবে পূরণ করুন:</span>
+                <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs text-amber-800">
+                  {validationErrors.roll && <li>{validationErrors.roll}</li>}
+                  {validationErrors.studentClass && <li>{validationErrors.studentClass}</li>}
+                  {validationErrors.examTerm && <li>{validationErrors.examTerm}</li>}
+                </ul>
+              </div>
+            </div>
+          )}
+
           <form
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               handleSearch();
             }}
-            className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end"
+            className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start"
           >
-            {/* Class Roll Number Only */}
+            {/* Class Roll Number Input */}
             <div className="md:col-span-4 space-y-1.5">
               <label className="block text-xs font-bold text-gray-700">
-                শ্রেণির রোল নম্বর *
+                শ্রেণির রোল নম্বর <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                required
                 placeholder="যেমন: ১, ২, ৩... (e.g. 1, 2, 3)"
                 value={searchRoll}
-                onChange={(e) => setSearchRoll(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-hidden focus:border-emerald-600 focus:bg-white transition"
+                onChange={(e) => {
+                  setSearchRoll(e.target.value);
+                  if (validationErrors.roll) {
+                    setValidationErrors((prev) => ({ ...prev, roll: undefined }));
+                  }
+                }}
+                className={`w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm transition ${
+                  validationErrors.roll
+                    ? 'border-2 border-red-500 bg-red-50/40 text-red-900 placeholder-red-400 focus:outline-hidden focus:border-red-600'
+                    : 'bg-gray-50/70 border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-hidden focus:border-emerald-600 focus:bg-white'
+                }`}
               />
+              {validationErrors.roll && (
+                <p className="text-[11px] text-red-600 font-semibold flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{validationErrors.roll}</span>
+                </p>
+              )}
             </div>
 
             {/* Class Selection Dropdown */}
             <div className="md:col-span-3 space-y-1.5">
               <label className="block text-xs font-bold text-gray-700">
-                শ্রেণি নির্বাচন করুন
+                শ্রেণি নির্বাচন করুন <span className="text-red-500">*</span>
               </label>
               <select
                 value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 focus:outline-hidden focus:border-emerald-600 focus:bg-white transition cursor-pointer"
+                onChange={(e) => {
+                  setSelectedClass(e.target.value);
+                  if (validationErrors.studentClass) {
+                    setValidationErrors((prev) => ({ ...prev, studentClass: undefined }));
+                  }
+                }}
+                className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm cursor-pointer transition ${
+                  validationErrors.studentClass
+                    ? 'border-2 border-red-500 bg-red-50/40 text-red-900 focus:outline-hidden focus:border-red-600'
+                    : 'bg-gray-50/70 border border-gray-200 text-gray-800 focus:outline-hidden focus:border-emerald-600 focus:bg-white'
+                }`}
               >
-                {classOptions.map((c, idx) => (
-                  <option key={idx} value={c}>
-                    {c}
+                {SEARCH_CLASS_OPTIONS.map((c, idx) => (
+                  <option key={idx} value={c.value}>
+                    {c.label}
                   </option>
                 ))}
               </select>
+              {validationErrors.studentClass && (
+                <p className="text-[11px] text-red-600 font-semibold flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{validationErrors.studentClass}</span>
+                </p>
+              )}
             </div>
 
-            {/* Examination Term */}
+            {/* Examination Term Dropdown */}
             <div className="md:col-span-3 space-y-1.5">
               <label className="block text-xs font-bold text-gray-700">
-                পরীক্ষার নাম / টার্ম
+                পরীক্ষার নাম / টার্ম <span className="text-red-500">*</span>
               </label>
               <select
                 value={selectedTerm}
-                onChange={(e) => setSelectedTerm(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 focus:outline-hidden focus:border-emerald-600 focus:bg-white transition cursor-pointer"
+                onChange={(e) => {
+                  setSelectedTerm(e.target.value);
+                  if (validationErrors.examTerm) {
+                    setValidationErrors((prev) => ({ ...prev, examTerm: undefined }));
+                  }
+                }}
+                className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm cursor-pointer transition ${
+                  validationErrors.examTerm
+                    ? 'border-2 border-red-500 bg-red-50/40 text-red-900 focus:outline-hidden focus:border-red-600'
+                    : 'bg-gray-50/70 border border-gray-200 text-gray-800 focus:outline-hidden focus:border-emerald-600 focus:bg-white'
+                }`}
               >
-                {termOptions.map((t, idx) => (
-                  <option key={idx} value={t}>
-                    {t}
+                {SEARCH_TERM_OPTIONS.map((t, idx) => (
+                  <option key={idx} value={t.value}>
+                    {t.label}
                   </option>
                 ))}
               </select>
+              {validationErrors.examTerm && (
+                <p className="text-[11px] text-red-600 font-semibold flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{validationErrors.examTerm}</span>
+                </p>
+              )}
             </div>
 
             {/* Search Button */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 pt-5.5">
               <button
                 type="submit"
-                className="w-full bg-[#059669] hover:bg-[#047857] text-white py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                className="w-full bg-[#059669] hover:bg-[#047857] text-white py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-sm cursor-pointer hover:shadow"
               >
                 <Search className="w-4 h-4" />
                 <span>ফলাফল অনুসন্ধান</span>
@@ -478,29 +626,36 @@ export const AcademicResultsSearch: React.FC = () => {
             </div>
           </form>
 
-          {/* Quick Demo Records Buttons - Based on Roll */}
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100 text-xs">
-            <span className="text-gray-400 font-medium">দ্রুত ডেমো রেজাল্ট দেখুন:</span>
+          {/* Quick Demo Records Buttons - Sets Exact Roll, Class, and Exam */}
+          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100 text-xs">
+            <span className="text-gray-500 font-bold">সঠিক তথ্য দিয়ে দ্রুত যাচাই করুন:</span>
             <button
               type="button"
-              onClick={() => selectDemoRecord('1')}
-              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
+              onClick={() => selectDemoRecord('1', '১০ম শ্রেণি (বিজ্ঞান)', 'Pre-Test Examination (2026)')}
+              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
             >
-              <span>সাদিয়া জাহান (রোল: ১)</span>
+              <span>সাদিয়া জাহান (১০ম বিজ্ঞান - রোল ১)</span>
             </button>
             <button
               type="button"
-              onClick={() => selectDemoRecord('2')}
-              className="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 px-3 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
+              onClick={() => selectDemoRecord('2', '১০ম শ্রেণি (বিজ্ঞান)', 'Pre-Test Examination (2026)')}
+              className="bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
             >
-              <span>তানভীর আহমেদ (রোল: ২)</span>
+              <span>তানভীর আহমেদ (১০ম বিজ্ঞান - রোল ২)</span>
             </button>
             <button
               type="button"
-              onClick={() => selectDemoRecord('3')}
-              className="bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 px-3 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
+              onClick={() => selectDemoRecord('1', '৮ম শ্রেণি', 'Annual Examination / বার্ষিক পরীক্ষা (2026)')}
+              className="bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
             >
-              <span>নুসরাত জাহান (রোল: ৩)</span>
+              <span>রাফসান জামান (৮ম শ্রেণি - রোল ১, বার্ষিক)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => selectDemoRecord('1', '৯ম শ্রেণি (মানবিক)', '1st Term Examination / ১ম সাময়িক পরীক্ষা (2026)')}
+              className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 text-[11px]"
+            >
+              <span>সুমাইয়া আক্তার (৯ম মানবিক - রোল ১, ১ম সাময়িক)</span>
             </button>
           </div>
         </div>
@@ -825,13 +980,49 @@ export const AcademicResultsSearch: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-md p-8 text-center space-y-3">
-                <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
-                <h4 className="text-base font-bold text-gray-900">কোনো ফলাফল পাওয়া যায়নি</h4>
-                <p className="text-xs text-gray-500 max-w-md mx-auto">
-                  আপনার প্রদানকৃত শ্রেণির রোল নম্বর দিয়ে কোনো প্রকাশিত ফলাফল পাওয়া যায়নি। অনুগ্রহ করে
-                  সঠিক রোল নম্বর (যেমন: ১, ২, ৩) এবং শ্রেণি নির্বাচন করে পুনরায় চেষ্টা করুন।
-                </p>
+              <div className="bg-white rounded-3xl border border-rose-100 shadow-md p-8 text-center space-y-4 max-w-2xl mx-auto">
+                <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border-2 border-rose-200 shadow-inner">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900">কোনো ফলাফল পাওয়া যায়নি</h4>
+                  <p className="text-xs sm:text-sm text-gray-600 max-w-md mx-auto mt-2 leading-relaxed">
+                    আপনার প্রদানকৃত তথ্যের সাথে মিলিয়ে কোনো প্রকাশিত ফলাফল পাওয়া যায়নি।
+                  </p>
+                </div>
+
+                {/* Searched Criteria Summary Box */}
+                {lastSearchedCriteria && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-xs text-left max-w-md mx-auto space-y-2">
+                    <span className="font-bold text-gray-700 block border-b border-gray-200 pb-1.5">
+                      অনুসন্ধানকৃত বিবরণ:
+                    </span>
+                    <div className="grid grid-cols-3 gap-2 text-gray-600">
+                      <div>
+                        <span className="text-gray-400 block text-[10px]">রোল নম্বর:</span>
+                        <span className="font-semibold text-gray-900">{lastSearchedCriteria.roll}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[10px]">নির্বাচিত শ্রেণি:</span>
+                        <span className="font-semibold text-gray-900">{lastSearchedCriteria.studentClass}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[10px]">পরীক্ষার নাম:</span>
+                        <span className="font-semibold text-gray-900 truncate block" title={lastSearchedCriteria.examTerm}>
+                          {lastSearchedCriteria.examTerm}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Helpful Validation Guideline */}
+                <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-[11.5px] text-amber-900 text-left max-w-md mx-auto leading-relaxed flex items-start gap-2">
+                  <span className="text-sm">⚠️</span>
+                  <span>
+                    <strong>ডেটা ভ্যালিডেশন নিয়ম:</strong> ফলাফল দেখার জন্য শিক্ষার্থীর রোল নম্বর, শ্রেণি এবং সংশ্লিষ্ট পরীক্ষার নাম — এই তিনটি তথ্যই অবিকল সঠিক হতে হবে। যেকোনো একটি তথ্য অমিল থাকলে ফলাফল দেখা যাবে না।
+                  </span>
+                </div>
               </div>
             )}
           </div>
