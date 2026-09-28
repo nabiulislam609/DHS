@@ -65,8 +65,6 @@ export const AdmissionModal: React.FC = () => {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
 
-  if (!isAdmissionModalOpen) return null;
-
   const isClass910 = isClassWithGroups(formData.applyingClass);
 
   // Available 4th / Elective subject choices for Class 9 & 10
@@ -440,6 +438,8 @@ export const AdmissionModal: React.FC = () => {
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 3000);
   };
+
+  if (!isAdmissionModalOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">

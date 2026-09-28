@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { SchoolProvider, useSchool } from './context/SchoolContext';
 import { FrontendView } from './components/frontend/FrontendView';
 import { AdminPanel } from './components/admin/AdminPanel';
@@ -8,9 +8,10 @@ import { DedicatedTeachersPage } from './components/frontend/DedicatedTeachersPa
 import { DedicatedStaffPage } from './components/frontend/DedicatedStaffPage';
 import { Shield, Globe } from 'lucide-react';
 
-const MainApp: React.FC = () => {
-  const { viewMode, setViewMode, currentFrontendPage } = useSchool();
+const AppContent: React.FC = () => {
+  const { viewMode, currentFrontendPage, setViewMode } = useSchool();
 
+  // Full-page dedicated routes
   if (currentFrontendPage === 'results') {
     return <DedicatedResultsPage />;
   }
@@ -28,30 +29,32 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="relative">
-      {/* Floating Toggle Button between Frontend & Backend for convenience */}
-      <div className="fixed bottom-4 right-4 z-50">
-        <button
-          onClick={() => setViewMode(viewMode === 'frontend' ? 'backend' : 'frontend')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full shadow-2xl font-bold text-xs transition transform hover:scale-105 active:scale-95 cursor-pointer border border-white/20 bg-emerald-800 hover:bg-emerald-900 text-white"
-          title={viewMode === 'frontend' ? 'অ্যাডমিন প্যানেল এ যান' : 'ওয়েবসাইট ভিউ এ যান'}
-        >
-          {viewMode === 'frontend' ? (
-            <>
-              <Shield className="w-4 h-4 text-amber-300" />
-              <span>এডমিন প্যানেল</span>
-            </>
-          ) : (
-            <>
-              <Globe className="w-4 h-4 text-emerald-300" />
-              <span>ওয়েবসাইট দেখুন</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Main View Router */}
+    <div className="relative min-h-screen">
+      {/* Switch between original Frontend Website and original Admin Dashboard */}
       {viewMode === 'frontend' ? <FrontendView /> : <AdminPanel />}
+
+      {/* Floating Toggle Button for Instant 1-Click Switch */}
+      <div className="fixed bottom-5 right-5 z-50 no-print">
+        {viewMode === 'frontend' ? (
+          <button
+            onClick={() => setViewMode('backend')}
+            className="flex items-center gap-2 bg-[#15803d] hover:bg-[#166534] text-white px-4 py-2.5 rounded-full shadow-2xl font-bold text-xs border-2 border-white transition-all transform hover:scale-105 cursor-pointer active:scale-95"
+            title="এডমিন ড্যাশবোর্ডে প্রবেশ করুন"
+          >
+            <Shield className="w-4 h-4 text-emerald-200" />
+            <span>এডমিন ড্যাশবোর্ড</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setViewMode('frontend')}
+            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-4 py-2.5 rounded-full shadow-2xl font-bold text-xs border-2 border-white transition-all transform hover:scale-105 cursor-pointer active:scale-95"
+            title="লাইভ ওয়েবসাইট দেখুন"
+          >
+            <Globe className="w-4 h-4 text-blue-200" />
+            <span>ওয়েবসাইট ভিউ</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 };
@@ -59,7 +62,7 @@ const MainApp: React.FC = () => {
 export function App() {
   return (
     <SchoolProvider>
-      <MainApp />
+      <AppContent />
     </SchoolProvider>
   );
 }

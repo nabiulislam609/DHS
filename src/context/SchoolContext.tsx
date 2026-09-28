@@ -196,7 +196,21 @@ interface SchoolContextType {
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
 
 export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [viewMode, setViewMode] = useState<ViewMode>('frontend');
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dhs_view_mode');
+      if (saved === 'frontend' || saved === 'backend') return saved;
+      if (window.location.search.includes('view=frontend')) return 'frontend';
+    }
+    return 'backend';
+  });
+
+  const setViewMode = (mode: ViewMode) => {
+    setViewModeState(mode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dhs_view_mode', mode);
+    }
+  };
   const [adminTab, setAdminTab] = useState<AdminTab>('dashboard');
   const [isAdmissionModalOpen, setIsAdmissionModalOpen] = useState(false);
 
